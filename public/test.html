@@ -1,4 +1,12 @@
+<!doctype html>
+<html lang="en">
+
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RealRobots Configurator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.3.1/p5.js"></script> -->
     <script type="text/javascript" src="./configurator.js"></script>
     <script type="text/javascript" src="./device.js"></script>
@@ -8,11 +16,199 @@
 
 <body>
 
-    <button onclick="setup()">Connect</button>
-    <button onclick="SendHandShake()">Handshake</button>
-    <button onclick="SendInputConfigRequest()">RequestInputs</button>
+    <!-- 
+    <button onclick="setup() ">Connect</button>
+    <button onclick="SendHandShake() ">Handshake</button> -->
+    <button onclick="Test() ">Test</button>
 
-    <canvas id="myCanvas" width="1024" height="768" style="border:1px solid #000000;"></canvas>
-    <script type="text/javascript" src="./ui.js"></script>
+
+    <div class="container">
+        <div class="row align-items-start">
+            <div class="col-sm-2">
+                One of three columns
+            </div>
+            <div id="pageConnect" class="col-sm-8">
+                <button class="btn btn-primary" onclick="setup()" type="button">
+                    Connect
+                </button>
+            </div>
+            <form id="pageInput" class="col-sm-8 border" hidden>
+                <div class="row text-center">
+                    <h3>Input Configuration</h3>
+
+                </div>
+                <hr class="bg-primary border-2 border-top border-primary">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <h4>Pin</h4>
+                    </div>
+                    <div class="col-sm-4">
+                        <h4>PinMode</h4>
+                    </div>
+                    <div class="col-sm-3">
+                        <h4>Analog</h4>
+                    </div>
+                    <div class="col-sm-2">
+                        <h4>Inverted</h4>
+                    </div>
+                </div>
+                <div class="row ">
+                    <div class="dropdown col-sm-3">
+                        <select id="inputPin" class="form-select" aria-label="Default select example">
+                            <option value="1">1</option>
+                            <option value="2">One</option>
+                            <option value="3">Two</option>
+                            <option value="4">Three</option>
+                          </select>
+                    </div>
+                    <div class="dropdown col-sm-4">
+                        <select id="inputPinMode" class="form-select" aria-label="Default select example">
+                            
+                          </select>
+                    </div>
+                    <div class="dropdown col-sm-3">
+                        <select id="comboAnalogMode" class="form-select" aria-label="Default select example">
+                            
+                          </select>
+                    </div>
+                    <div class="checkbox col-sm-2 ">
+                        <input type="checkbox" class="form-check-input" id="dropdownCheck">
+                    </div>
+                </div>
+
+                <hr class="bg-primary border-2 border-top border-primary">
+
+                <div class="row ">
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Min</h4>
+                    </div>
+                    <div class="col-sm-2 gy-4 ">
+                        <h4>Mid</h4>
+                    </div>
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Max</h4>
+                    </div>
+                    <div class="col-sm-2 gy-4 ">
+                        <h4>DeadZone</h4>
+                    </div>
+                    <div class="col-sm-2 gy-4 ">
+                        <h4>FilterSize</h4>
+                    </div>
+                </div>
+
+                <div class="row ">
+                    <div class="col-sm-3 ">
+                        <input value="0" min="0" max="4095" type="number" id="typeNumber" class="form-control" />
+                    </div>
+                    <div class="col-sm-2 ">
+                        <input value="2048" min="0" max="4095" type="number" id="typeNumber" class="form-control" />
+                    </div>
+                    <div class="col-sm-3 ">
+                        <input value="4095" min="0" max="4095" type="number" id="typeNumber" class="form-control" />
+                    </div>
+                    <div class="col-sm-2 ">
+                        <input value="256" min="0" max="4095" type="number" id="typeNumber" class="form-control" />
+                    </div>
+                    <div class="col-sm-2 ">
+                        <input value="0" min="0" max="20" type="number" id="typeNumber" class="form-control" />
+                    </div>
+                </div>
+
+                <hr class="bg-primary border-2 border-top border-primary">
+
+                <div class="row ">
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Input Type</h4>
+                    </div>
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Assignent</h4>
+                    </div>
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Raw</h4>
+                    </div>
+                    <div class="col-sm-3 gy-4 ">
+                        <h4>Calibrated</h4>
+                    </div>
+                </div>
+
+
+
+                <div class="row ">
+                    <div class="dropdown col-sm-3 ">
+                        <select id="comboBindingType" onchange="onBindingTypeChange()" class=" form-select " aria-label="Default select example ">
+                            
+                          </select>
+                    </div>
+                    <div class="dropdown col-sm-3 ">
+                        <select id="comboBindingAssignment" class="form-select " aria-label="Default select example ">
+                            
+                          </select>
+                    </div>
+                    <div class="col-sm-3 ">
+                        <p>2048</p>
+                    </div>
+                    <div class="col-sm-3 progress ">
+                        <div class="progress-bar " role="progressbar " aria-valuenow="16000 " aria-valuemin="0 " aria-valuemax="32767 ">
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="bg-primary border-2 border-top border-primary ">
+
+                <div class="row ">
+                    <div class="float-end ">
+                        <button class="btn btn-danger float-end " type="button ">
+                        Delete Input
+                    </button>
+                    </div>
+                </div>
+
+            </form>
+            <div class="col-sm-2 ">
+                One of three columns
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="container col-3 "></div>
+
+    <div class="container col-3 "></div>
+
+    <div id="form container inputList ">
+        <div class="row align-items-start ">
+
+        </div>
+        <div class="row align-items-start ">
+
+        </div>
+        <div class="row align-items-start ">
+
+        </div>
+    </div>
+
+    <div class="btn-group ">
+        <button type="button " class="btn btn-danger dropdown-toggle " data-bs-toggle="dropdown " aria-expanded="false ">
+          Action
+        </button>
+        <ul class="dropdown-menu ">
+            <li><a class="dropdown-item " href="# ">Action</a></li>
+            <li><a class="dropdown-item " href="# ">Another action</a></li>
+            <li><a class="dropdown-item " href="# ">Something else here</a></li>
+            <li>
+                <hr class="dropdown-divider ">
+            </li>
+            <li><a class="dropdown-item " href="# ">Separated link</a></li>
+        </ul>
+    </div>
+
+
+    <!-- <canvas id="myCanvas " width="1024 " height="768 " style="border:1px solid #000000; "></canvas> -->
+    <script type="text/javascript " src="./ui.js "></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js " integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4 " crossorigin="anonymous "></script>
+
 </body>
-<h2>hello</h2>
+
+</html>

@@ -18,6 +18,7 @@ function GetDeviceTarget(microcontrollerIdx) {
     return null;
 }
 
+
 const targetESP32 = {
     index: 0,
     microcontrollerName: "ESP32",
@@ -58,3 +59,59 @@ targetESP32.pins.push(new Pin(36, 1, 0, "Input only"))
 targetESP32.pins.push(new Pin(39, 1, 0, "Input only"))
 
 const MICROCONTROLLERS = [targetESP32];
+
+
+DIGITAL = 0
+ANALOG = 1
+const analogModes = ["DIGITAL", "ANALOG"]
+
+// PinModes as defined by ESP32 
+INPUT = 1
+INPUT_PULLUP = 5
+INPUT_PULLDOWN = 9
+OUTPUT = 3
+
+const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"]
+
+
+// HID Input Types
+GAMEPAD_BUTTON = 1 // 1-128
+GAMEPAD_AXIS = 2 // 0-7  x, y, z, rZ, rX, rY, slider1, slider2
+GAMEPAD_HAT = 3 // 3 hats, 8 directions each, assignedInput = dir + hatIdx*9
+GAMEPAD_SPECIAL = 4
+
+inputTypes = ["NONE", "BUTTON", "AXIS", "HAT"]
+
+inputsGamepadButtons = ["NONE"]
+for (var i = 1; i < 129; i++) {
+    inputsGamepadButtons.push(i.toString())
+}
+inputsGamepadAxes = ["X Axis", "Y Axis", "Z Axis", "rX Axis", "rY Axis", "rZ Axis", "Slider 1", "Slider 2"];
+inputsGamepadHatDirections = ["NONE", "N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+inputsGamepadHats = []
+for (var i = 1; i < 5; i++) {
+    for (var h = 0; h < inputsGamepadHatDirections.length; h++) {
+
+        inputsGamepadHats.push("Hat " + i.toString() + " " + inputsGamepadHatDirections[h])
+    }
+}
+
+// Takes string ("BUTTON", "AXIS") etc and returns list of applicable assignments
+function GetAssignmentList(inputType) {
+    var indexOf = 0;
+    for (var i = 0; i < inputTypes.length; i++) {
+        if (inputTypes[i] == inputType) {
+            indexOf = i;
+        }
+    }
+
+    if (indexOf == GAMEPAD_BUTTON) {
+        return inputsGamepadButtons
+    } else if (indexOf == GAMEPAD_AXIS) {
+        return inputsGamepadAxes
+    } else if (indexOf == GAMEPAD_HAT) {
+        return inputsGamepadHats
+    } else {
+        return ["NONE"]
+    }
+}

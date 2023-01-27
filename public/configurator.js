@@ -1,4 +1,3 @@
-let pHtmlMsg;
 let serialOptions = { baudRate: 115200 };
 let serial;
 let receivedData;
@@ -15,6 +14,9 @@ const INCOMING_CONFIG_RESPONSE = 101;
 
 const OUTGOING_INPUT_CONFIG_REQUEST = 104;
 const INCOMING_INPUT_CONFIG_RESPONSE = 105;
+
+const OUTGOING_INPUT_CONFIG_UPDATE = 106
+const INCOMING_INPUT_CONFIG_UPDATE_RESPONSE = 107
 
 
 // 
@@ -39,8 +41,90 @@ function setup() {
     //pHtmlMsg = createP("Click anywhere on this page to open the serial connection dialog");
 
     device = new Device();
-    console.log(device);
-    console.log(targetESP32);
+
+
+}
+
+function Test() {
+
+
+    // PopulatePinList();
+    // PopulatePinModeList();
+    // PopulateIsAnalogList();
+    PopulateBindingTypeList();
+    PopulateBindingAssignmentList();
+}
+
+function PopulatePinList() {
+    inputList = device.GetBlueprintInputList();
+    comboPin = document.getElementById("inputPin");
+    ClearOptions(comboPin);
+    for (var i = 0; i < inputList.length; i++) {
+        AddNewOption(comboPin, inputList[i], inputList[i]);
+    }
+}
+
+function PopulatePinModeList() {
+    pinModeList = pinModes;
+    comboPinMode = document.getElementById("inputPinMode");
+    //ClearOptions(comboPinMode);
+    for (var i = 0; i < pinModeList.length; i++) {
+        AddNewOption(comboPinMode, pinModeList[i], pinModeList[i]);
+    }
+}
+
+function PopulateIsAnalogList() {
+    analogModeList = analogModes;
+    comboAnalogMode = document.getElementById("comboAnalogMode");
+    //ClearOptions(comboPinMode);
+    for (var i = 0; i < analogModeList.length; i++) {
+        AddNewOption(comboAnalogMode, analogModeList[i], analogModeList[i]);
+    }
+}
+
+function PopulateBindingTypeList() {
+    options = inputTypes;
+    comboBindingType = document.getElementById("comboBindingType");
+    ClearOptions(comboBindingType);
+    for (var i = 0; i < options.length; i++) {
+        AddNewOption(comboBindingType, options[i], options[i]);
+    }
+}
+
+function PopulateBindingAssignmentList() {
+    var comboBindingType = document.getElementById("comboBindingType")
+    var bindingType = comboBindingType.options[comboBindingType.selectedIndex].value
+
+
+    options = GetAssignmentList(bindingType);
+    comboBindingAssignment = document.getElementById("comboBindingAssignment");
+    console.log(comboBindingAssignment);
+    ClearOptions(comboBindingAssignment);
+    for (var i = 0; i < options.length; i++) {
+        AddNewOption(comboBindingAssignment, options[i], options[i]);
+    }
+}
+
+function onBindingTypeChange() {
+    console.log("ONCHANGE");
+    PopulateBindingAssignmentList();
+}
+
+function ClearOptions(selectElement) {
+    if (selectElement == null) {
+        return;
+    }
+    while (selectElement.options.length > 0) {
+        selectElement.options.remove(0);
+    }
+}
+
+function AddNewOption(selectElement, text, id) {
+    var option = document.createElement("option");
+    option.text = text;
+    option.value = id;
+    option.selected = "selected";
+    selectElement.add(option);
 }
 
 // function draw() {
@@ -65,6 +149,10 @@ function onSerialErrorOccurred(eventSender, error) {
 function onSerialConnectionOpened(eventSender) {
     console.log("onSerialConnectionOpened");
     //pHtmlMsg.html("Serial connection opened successfully");
+    SendHandShake();
+    document.getElementById("pageConnect").hidden = true;
+    document.getElementById("pageInput").hidden = false;
+
 }
 
 /**
@@ -129,6 +217,20 @@ function SendInputConfigRequest() {
     serial.write(request);
 }
 
+function SendDeviceUpdate(index, sendAll = false) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_INPUT_CONFIG_UPDATE);
+    inputData = device.GetInput(index).ToIntArray()
+    for (var i = 0; i < inputData.length; i++) {
+        request.push(inputData[i]);
+    }
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    serial.write(request);
+}
+
 function OnHandshakeSuccessful() {
 
     console.log("Handshake Response Received");
@@ -141,13 +243,13 @@ function ParseInputConfigResponse(response) {
         console.log("No inputs")
     } else {
         console.log(inputCount + " inputs");
-
         for (var i = 0; i < inputCount * 20; i += 20) {
             device.AddInput(response.slice(i + 2, i + 20 + 2));
         }
-
     }
     console.log(device);
+    //SendDeviceUpdate(0);
+    LoadInputFromDevice(0);
 }
 
 function CompareUintArrays(array1, array2) {
@@ -176,6 +278,20 @@ function ParseResponse(response) {
     } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE) {
         console.log("Device Input Config Received");
         ParseInputConfigResponse(response);
+
+    } else if (response[0] == INCOMING_INPUT_CONFIG_UPDATE_RESPONSE) {
+        console.log("Device Input Update Confirmation Received");
+        if (response[2] == 111 && response[3] == 107) {
+            console.log("OK");
+        }
     }
 
+}
+
+function LoadInputFromDevice(idx) {
+    //document.getElementById("inputPin").textContent = "hello";
+    //t = document.getElementById("inputPin").options[document.getElementById("select").selectedIndex].text;
+    //console.log(t);
+    //console.log("inputpin");
+    //console.log($('#inputPin'));
 }

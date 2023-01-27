@@ -10,6 +10,24 @@ class Device {
         this.inputCount = 3;
         this.inputsLocked = true;
 
+        // var newInput = new DeviceInput();
+        // //newInput.SetFromConfigPacket(data);
+        // this.inputs.push(newInput);
+
+    }
+
+    GetBlueprintInputList() {
+        var inputPins = []
+        for (var i = 0; i < this.deviceBlueprint.pins.length; i++) {
+            if (this.deviceBlueprint.pins[i].input == 1) {
+                inputPins.push(this.deviceBlueprint.pins[i].gpio);
+            }
+        }
+        return inputPins;
+    }
+
+    GetInput(idx) {
+        return this.inputs[idx];
     }
 
     SetFromConfigPacket(data) {
@@ -48,6 +66,8 @@ class DeviceInput {
         this.enableFiltering = 0;
         this.bufferSize = 0;
 
+        this.binding = new Binding();
+
     }
 
     SetFromConfigPacket(data) {
@@ -64,5 +84,66 @@ class DeviceInput {
         this.deadZone = data[10] << 8
         this.deadZone += data[11]
         this.bufferSize = data[12]
+    }
+
+    ToIntArray() {
+        var bytes = [];
+        bytes.push(this.pin);
+        bytes.push(this.pinMode);
+        bytes.push(this.isAnalog);
+        bytes.push(this.isInverted);
+
+        bytes.push((this.minVal >> 8)); // highbyte
+        bytes.push(this.minVal & 0xff); // lowbyte
+
+        bytes.push((this.minVal >> 8));
+        bytes.push(this.minVal & 0xff);
+
+        bytes.push((this.midVal >> 8));
+        bytes.push(this.midVal & 0xff);
+
+        bytes.push((this.maxVal >> 8));
+        bytes.push(this.maxVal & 0xff);
+
+        bytes.push(this.bufferSize);
+
+        var binding = this.binding.ToIntArray();
+        for (var i = 0; i < this.binding.ToIntArray().length; i++) {
+            bytes.push(binding[i]);
+        }
+
+        return bytes;
+    }
+}
+
+
+class Binding {
+    constructor() {
+        this.deviceType = 1; //constant.GAMEPAD
+        this.inputType = 1; //constant.GAMEPAD_BUTTON
+        this.assignedInput = 0;
+        this.value = 0;
+        this.state = 0; //constant.BUTTON_UP
+        this.trigger = 4;
+    }
+
+    SetConfig(data) {
+        this.deviceType = data[13]
+        this.inputType = data[14]
+        this.assignedInput = data[15]
+        this.value = data[16] << 8
+        this.value += data[17]
+        this.state = data[18]
+        this.trigger = data[19]
+    }
+
+    ToIntArray() {
+        var bytes = [];
+        bytes.push(this.deviceType);
+        bytes.push(this.inputType);
+        bytes.push(this.assignedInput);
+        bytes.push(this.state);
+        bytes.push(this.trigger);
+        return bytes
     }
 }
