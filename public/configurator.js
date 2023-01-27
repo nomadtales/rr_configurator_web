@@ -1,25 +1,27 @@
-// This is a basic web serial template for p5.js. Please see:
-// https://makeabilitylab.github.io/physcomp/communication/p5js-serial
-// 
-// By Jon E. Froehlich
-// @jonfroehlich
-// http://makeabilitylab.io/
-//
-
-
 let pHtmlMsg;
 let serialOptions = { baudRate: 115200 };
 let serial;
 let receivedData;
 let currentByte;
+let device;
+
+const OUTGOING_REQUEST_HEADER = 36 // '$'
+const OUTGOING_HANDSHAKE_REQUEST = 72 // 'H'
 
 const INCOMING_HANDSHAKE_RESPONSE = new Uint8Array([72, 101, 108, 108, 111, 32, 121, 111, 117, 114, 115, 101, 108, 102, 33, 13, 10]);
+
+const OUTGOING_CONFIG_REQUEST = 100;
 const INCOMING_CONFIG_RESPONSE = 101;
+
+const OUTGOING_INPUT_CONFIG_REQUEST = 104;
+const INCOMING_INPUT_CONFIG_RESPONSE = 105;
+
+
 // 
 // currentByte = 0;
 
 function setup() {
-    createCanvas(640, 480);
+    //createCanvas(640, 480);
     receivedData = new Uint8Array(256);
     currentByte = 0;
     console.log(receivedData);
@@ -34,12 +36,16 @@ function setup() {
     serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
 
     // Add in a lil <p> element to provide messages. This is optional
-    pHtmlMsg = createP("Click anywhere on this page to open the serial connection dialog");
+    //pHtmlMsg = createP("Click anywhere on this page to open the serial connection dialog");
+
+    device = new Device();
+    console.log(device);
+    console.log(targetESP32);
 }
 
-function draw() {
-    background(100);
-}
+// function draw() {
+//     background(100);
+// }
 
 /**
  * Callback function by serial.js when there is an error on web serial
@@ -48,7 +54,7 @@ function draw() {
  */
 function onSerialErrorOccurred(eventSender, error) {
     console.log("onSerialErrorOccurred", error);
-    pHtmlMsg.html(error);
+    //pHtmlMsg.html(error);
 }
 
 /**
@@ -58,7 +64,7 @@ function onSerialErrorOccurred(eventSender, error) {
  */
 function onSerialConnectionOpened(eventSender) {
     console.log("onSerialConnectionOpened");
-    pHtmlMsg.html("Serial connection opened successfully");
+    //pHtmlMsg.html("Serial connection opened successfully");
 }
 
 /**
@@ -68,7 +74,7 @@ function onSerialConnectionOpened(eventSender) {
  */
 function onSerialConnectionClosed(eventSender) {
     console.log("onSerialConnectionClosed");
-    pHtmlMsg.html("onSerialConnectionClosed");
+    //pHtmlMsg.html("onSerialConnectionClosed");
 }
 
 /**
@@ -106,25 +112,20 @@ function OnEOLReached() {
     ParseResponse(data);
 }
 
-/**
- * Called automatically by the browser through p5.js when mouse clicked
- */
-function mouseClicked() {
-    if (!serial.isOpen()) {
-        serial.connectAndOpen(null, serialOptions);
-    } else {
-        SendHandShake();
-    }
-}
-
 function SendHandShake() {
     console.log("sending handshake");
-    request = new Uint8Array([72, 69, 13, 10]);
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_HANDSHAKE_REQUEST, 13, 10]);
     serial.write(request);
 }
 
 function SendDeviceConfigRequest() {
-    request = new Uint8Array([36, 100, 13, 10]);
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_CONFIG_REQUEST, 13, 10]);
+    serial.write(request);
+}
+
+function SendInputConfigRequest() {
+    console.log("Sending input config request");
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_INPUT_CONFIG_REQUEST, 13, 10]);
     serial.write(request);
 }
 
@@ -132,6 +133,21 @@ function OnHandshakeSuccessful() {
 
     console.log("Handshake Response Received");
     SendDeviceConfigRequest();
+}
+
+function ParseInputConfigResponse(response) {
+    var inputCount = response[1];
+    if (inputCount == 0) {
+        console.log("No inputs")
+    } else {
+        console.log(inputCount + " inputs");
+
+        for (var i = 0; i < inputCount * 20; i += 20) {
+            device.AddInput(response.slice(i + 2, i + 20 + 2));
+        }
+
+    }
+    console.log(device);
 }
 
 function CompareUintArrays(array1, array2) {
@@ -153,6 +169,13 @@ function ParseResponse(response) {
         OnHandshakeSuccessful();
     } else if (response[0] == INCOMING_CONFIG_RESPONSE) {
         console.log("Device Config Received");
+        device.SetFromConfigPacket(response);
+        device.SetDeviceBlueprint(GetDeviceTarget(device.microcontroller));
+        SendInputConfigRequest();
+
+    } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE) {
+        console.log("Device Input Config Received");
+        ParseInputConfigResponse(response);
     }
 
 }
