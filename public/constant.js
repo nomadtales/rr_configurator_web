@@ -71,6 +71,20 @@ INPUT_PULLUP = 5
 INPUT_PULLDOWN = 9
 OUTPUT = 3
 
+function GetPinMode(esp32val) {
+    if (esp32val == INPUT) {
+        return pinModes[0];
+    } else if (esp32val == INPUT_PULLUP) {
+        return pinModes[1];
+    } else if (esp32val == INPUT_PULLDOWN) {
+        return pinModes[2];
+    } else if (esp32val == OUTPUT) {
+        return pinModes[3];
+    } else {
+        return "UNKNOWN";
+    }
+}
+
 const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"]
 
 

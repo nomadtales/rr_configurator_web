@@ -48,11 +48,43 @@ function setup() {
 function Test() {
 
 
-    // PopulatePinList();
-    // PopulatePinModeList();
-    // PopulateIsAnalogList();
+    PopulatePinList();
+    PopulatePinModeList();
+    PopulateIsAnalogList();
     PopulateBindingTypeList();
     PopulateBindingAssignmentList();
+    SetInputControlsFromDevice(0);
+}
+
+function SetInputControlsFromDevice(idx) {
+
+    SetComboBoxValue("inputPin", device.GetInput(idx).GetPin());
+
+    SetComboBoxValue("inputPinMode",
+        GetPinMode(device.GetInput(idx).GetPinMode()));
+
+    SetComboBoxValue("comboAnalogMode",
+        analogModes[device.GetInput(idx).GetIsAnalog()]);
+
+    bindingType = inputTypes[device.GetInput(idx).GetBindingType()]
+    SetComboBoxValue("comboBindingType", bindingType);
+
+    PopulateBindingAssignmentList();
+
+    SetComboBoxValue("comboBindingAssignment",
+        GetAssignmentList(bindingType)[device.GetInput(idx).GetAssignedInput()]);
+
+    document.getElementById("checkInverted").checked =
+        device.GetInput(idx).GetIsInverted();
+
+
+
+
+}
+
+function SetComboBoxValue(comboBox, value) {
+    box = document.getElementById(comboBox);
+    box.value = value;
 }
 
 function PopulatePinList() {
@@ -62,6 +94,7 @@ function PopulatePinList() {
     for (var i = 0; i < inputList.length; i++) {
         AddNewOption(comboPin, inputList[i], inputList[i]);
     }
+    comboPin.value = inputList[0];
 }
 
 function PopulatePinModeList() {
@@ -71,6 +104,7 @@ function PopulatePinModeList() {
     for (var i = 0; i < pinModeList.length; i++) {
         AddNewOption(comboPinMode, pinModeList[i], pinModeList[i]);
     }
+    comboPinMode.value = pinModeList[0];
 }
 
 function PopulateIsAnalogList() {
@@ -80,6 +114,7 @@ function PopulateIsAnalogList() {
     for (var i = 0; i < analogModeList.length; i++) {
         AddNewOption(comboAnalogMode, analogModeList[i], analogModeList[i]);
     }
+    comboAnalogMode.value = analogModeList[0];
 }
 
 function PopulateBindingTypeList() {
@@ -89,6 +124,7 @@ function PopulateBindingTypeList() {
     for (var i = 0; i < options.length; i++) {
         AddNewOption(comboBindingType, options[i], options[i]);
     }
+    comboBindingType.value = options[0];
 }
 
 function PopulateBindingAssignmentList() {
@@ -103,6 +139,7 @@ function PopulateBindingAssignmentList() {
     for (var i = 0; i < options.length; i++) {
         AddNewOption(comboBindingAssignment, options[i], options[i]);
     }
+    comboBindingAssignment.value = options[0];
 }
 
 function onBindingTypeChange() {

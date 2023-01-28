@@ -63,11 +63,54 @@ class DeviceInput {
         this.midVal = 2048;
         this.maxVal = 4096;
         this.deadZone = 512;
-        this.enableFiltering = 0;
         this.bufferSize = 0;
 
         this.binding = new Binding();
 
+    }
+
+    GetPin() {
+        return this.pin;
+    }
+
+    GetPinMode() {
+        return this.pinMode;
+    }
+
+    GetIsAnalog() {
+        return this.isAnalog;
+    }
+
+    GetIsInverted() {
+        return this.isInverted;
+    }
+
+    GetMinVal() {
+        return this.minVal;
+    }
+
+    GetMidVal() {
+        return this.midVal;
+    }
+
+    GetMaxVal() {
+        return this.maxVal;
+    }
+
+    GetDeadZone() {
+        return this.deadZone;
+    }
+
+    GetBindingType() {
+        return this.binding.GetBindingType()
+    }
+
+    GetAssignedInput() {
+        return this.binding.GetAssignedInput();
+    }
+
+    GetBufferSize() {
+        return this.bufferSize;
     }
 
     SetFromConfigPacket(data) {
@@ -84,6 +127,8 @@ class DeviceInput {
         this.deadZone = data[10] << 8
         this.deadZone += data[11]
         this.bufferSize = data[12]
+
+        this.binding.SetFromConfigPacket(data);
     }
 
     ToIntArray() {
@@ -127,9 +172,18 @@ class Binding {
         this.trigger = 4;
     }
 
-    SetConfig(data) {
+    GetBindingType() {
+        return this.inputType;
+    }
+
+    GetAssignedInput() {
+        return this.assignedInput;
+    }
+
+    SetFromConfigPacket(data) {
         this.deviceType = data[13]
         this.inputType = data[14]
+        console.log("INPUT TYPE: " + this.inputType);
         this.assignedInput = data[15]
         this.value = data[16] << 8
         this.value += data[17]
