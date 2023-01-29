@@ -72,10 +72,26 @@ function PopulateDeviceInputSelector() {
     inputList = device.inputs;
     selector = document.getElementById("comboAllInputs");
     ClearOptions(selector);
+
+    let bindingType = device.GetInput
+        // assignmentList = GetAssignmentList(bindingType);
     for (var i = 0; i < inputList.length; i++) {
-        for (var i = 0; i < inputList.length; i++) {
-            AddNewOption(selector, inputList[i].GetPin(), i);
+        bindingType = inputTypes[device.GetInput(i).GetBindingType()];
+        console.log(bindingType);
+        pin = inputList[i].GetPin();
+
+        console.log("l" + pin.length);
+        if (pin.toString().length == 1) {
+            pin += "\u2003\u2003"
+        } else {
+            pin += "\u2002\u2003"
         }
+
+        AddNewOption(selector,
+            pin +
+            GetAssignmentList(bindingType)[inputList[i].GetAssignedInput()],
+            i);
+
     }
     selector.value = 0;
 }
