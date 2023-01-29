@@ -3,6 +3,7 @@ let serial;
 let receivedData;
 let currentByte;
 let device;
+let selectedInputIndex = 0;
 
 const OUTGOING_REQUEST_HEADER = 36 // '$'
 const OUTGOING_HANDSHAKE_REQUEST = 72 // 'H'
@@ -17,6 +18,15 @@ const INCOMING_INPUT_CONFIG_RESPONSE = 105;
 
 const OUTGOING_INPUT_CONFIG_UPDATE = 106
 const INCOMING_INPUT_CONFIG_UPDATE_RESPONSE = 107
+
+const OUTGOING_REQUEST_DELETE_INPUT_UPDATE = 108
+const INCOMING_RESPONSE_DELETE_INPUT_UPDATE = 109
+
+const OUTGOING_REQUEST_INPUT_VALUES = 110
+const INCOMING_RESPONSE_INPUT_VALUES = 111
+
+const OUTGOING_REQUEST_SAVE_TO_FLASH = 112
+const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 
 
 // 
@@ -42,18 +52,30 @@ function setup() {
 
     device = new Device();
 
-    setInterval(Update, 200);
+    setInterval(Update, 50);
 }
 
 function Update() {
     if (typeof serial == 'undefined') {} else {
         if (serial.isOpen()) {
-
+            SendRequestInputValues();
         }
     }
 }
 
-function Test() {}
+function Test() {
+    serial.close();
+}
+
+function UpdateInputValues(inputIdx, raw, calibrated) {
+    if (inputIdx == selectedInputIndex) {
+        document.getElementById("labelRawValue").innerText = raw;
+        document.getElementById("progressBarCalibrated").style.animation = false;
+        //console.log(calibrated + ", " + Math.round((calibrated / 32767) * 100));
+        document.getElementById("progressBarCalibrated").value =
+            ((calibrated / 32767) * 100).toFixed(2);
+    }
+}
 
 function InitializeInputControls() {
     PopulateDeviceInputSelector();
@@ -70,17 +92,25 @@ function InitializeInputControls() {
 
 function PopulateDeviceInputSelector() {
     inputList = device.inputs;
+
+    if (inputList.length > 0) {
+        document.getElementById("pageInput").hidden = false;
+    } else {
+        document.getElementById("pageInput").hidden = true;
+    }
+
     selector = document.getElementById("comboAllInputs");
     ClearOptions(selector);
 
-    let bindingType = device.GetInput
+    let bindingType
         // assignmentList = GetAssignmentList(bindingType);
+    console.log("len: " + inputList.length);
     for (var i = 0; i < inputList.length; i++) {
-        bindingType = inputTypes[device.GetInput(i).GetBindingType()];
-        console.log(bindingType);
+        console.log("i:" + i);
+        bindingType = device.GetInput(i).GetBindingType();
+
         pin = inputList[i].GetPin();
 
-        console.log("l" + pin.length);
         if (pin.toString().length == 1) {
             pin += "\u2003\u2003"
         } else {
@@ -93,7 +123,7 @@ function PopulateDeviceInputSelector() {
             i);
 
     }
-    selector.value = 0;
+    selector.value = selectedInputIndex;
 }
 
 function SetDeviceDescriptionFromDevice() {
@@ -111,19 +141,19 @@ function SetInputControlsFromDevice(idx) {
 
     SetComboBoxValue("inputPin", device.GetInput(idx).GetPin());
 
-    SetComboBoxValue("inputPinMode",
-        GetPinMode(device.GetInput(idx).GetPinMode()));
+    SetComboBoxValue("inputPinMode", device.GetInput(idx).GetPinMode());
+    //console.log(device.GetInput(idx).GetPinMode());
 
     SetComboBoxValue("comboAnalogMode",
-        analogModes[device.GetInput(idx).GetIsAnalog()]);
+        device.GetInput(idx).GetIsAnalog());
 
-    bindingType = inputTypes[device.GetInput(idx).GetBindingType()]
+    bindingType = device.GetInput(idx).GetBindingType()
     SetComboBoxValue("comboBindingType", bindingType);
 
     PopulateBindingAssignmentList();
 
     SetComboBoxValue("comboBindingAssignment",
-        GetAssignmentList(bindingType)[device.GetInput(idx).GetAssignedInput()]);
+        device.GetInput(idx).GetAssignedInput());
 
     document.getElementById("checkInverted").checked =
         device.GetInput(idx).GetIsInverted();
@@ -163,21 +193,21 @@ function PopulatePinList() {
 function PopulatePinModeList() {
     pinModeList = pinModes;
     comboPinMode = document.getElementById("inputPinMode");
-    //ClearOptions(comboPinMode);
+    ClearOptions(comboPinMode);
     for (var i = 0; i < pinModeList.length; i++) {
-        AddNewOption(comboPinMode, pinModeList[i], pinModeList[i]);
+        AddNewOption(comboPinMode, pinModeList[i], pinModeInt[i]);
     }
-    comboPinMode.value = pinModeList[0];
+    //comboPinMode.value = pinModeList[0];
 }
 
 function PopulateIsAnalogList() {
     analogModeList = analogModes;
     comboAnalogMode = document.getElementById("comboAnalogMode");
-    //ClearOptions(comboPinMode);
+    ClearOptions(comboAnalogMode);
     for (var i = 0; i < analogModeList.length; i++) {
-        AddNewOption(comboAnalogMode, analogModeList[i], analogModeList[i]);
+        AddNewOption(comboAnalogMode, analogModeList[i], i);
     }
-    comboAnalogMode.value = analogModeList[0];
+    //comboAnalogMode.value = analogModeList[0];
 }
 
 function PopulateBindingTypeList() {
@@ -185,9 +215,9 @@ function PopulateBindingTypeList() {
     comboBindingType = document.getElementById("comboBindingType");
     ClearOptions(comboBindingType);
     for (var i = 0; i < options.length; i++) {
-        AddNewOption(comboBindingType, options[i], options[i]);
+        AddNewOption(comboBindingType, options[i], i);
     }
-    comboBindingType.value = options[0];
+    //comboBindingType.value = options[0];
 }
 
 function PopulateBindingAssignmentList() {
@@ -197,22 +227,155 @@ function PopulateBindingAssignmentList() {
 
     options = GetAssignmentList(bindingType);
     comboBindingAssignment = document.getElementById("comboBindingAssignment");
-    console.log(comboBindingAssignment);
+    // console.log(comboBindingAssignment);
     ClearOptions(comboBindingAssignment);
     for (var i = 0; i < options.length; i++) {
-        AddNewOption(comboBindingAssignment, options[i], options[i]);
+        AddNewOption(comboBindingAssignment, options[i], i);
     }
-    comboBindingAssignment.value = options[0];
+    comboBindingAssignment.value = 0;
+
+}
+
+function onPinChange() {
+    comboPin = document.getElementById("inputPin");
+    console.log("Setting Input " +
+        selectedInputIndex + " pin to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetPin(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onPinModeChange() {
+    comboPin = document.getElementById("inputPinMode");
+    console.log("Setting Input " +
+        selectedInputIndex + " PinMode to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetPinMode(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onAnalogModeChange() {
+    comboPin = document.getElementById("comboAnalogMode");
+    console.log("Setting Input " +
+        selectedInputIndex + " comboAnalogMode to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetIsAnalog(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onIsInvertedChange() {
+    comboPin = document.getElementById("checkInverted");
+    console.log("Setting Input " +
+        selectedInputIndex + " checkInverted to " +
+        comboPin.checked);
+    device.GetInput(selectedInputIndex).SetIsInverted(comboPin.checked);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onMinValChange() {
+    comboPin = document.getElementById("inputMinVal");
+    console.log("Setting Input " +
+        selectedInputIndex + " inputMinVal to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetMinVal(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onMidValChange() {
+    comboPin = document.getElementById("inputMidVal");
+    console.log("Setting Input " +
+        selectedInputIndex + " inputMidVal to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetMidVal(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onMaxValChange() {
+    comboPin = document.getElementById("inputMaxVal");
+    console.log("Setting Input " +
+        selectedInputIndex + " inputMaxVal to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetMaxVal(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onDeadZoneChange() {
+    comboPin = document.getElementById("inputDeadZone");
+    console.log("Setting Input " +
+        selectedInputIndex + " inputDeadZone to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetDeadZone(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onBufferSizeChange() {
+    comboPin = document.getElementById("inputFilterSize");
+    console.log("Setting Input " +
+        selectedInputIndex + " inputBufferSize to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetBufferSize(comboPin.value);
+
+    SendDeviceInputUpdate(selectedInputIndex);
 }
 
 function onBindingTypeChange() {
-    console.log("ONCHANGE");
+    comboPin = document.getElementById("comboBindingType");
+    console.log("Setting Input " +
+        selectedInputIndex + " comboBindingType to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetBindingType(comboPin.value);
+
     PopulateBindingAssignmentList();
+    PopulateDeviceInputSelector();
+
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onBindingAssignmentChange() {
+    comboPin = document.getElementById("comboBindingAssignment");
+    console.log("Setting Input " +
+        selectedInputIndex + " comboBindingAssignment to " +
+        comboPin.value);
+    device.GetInput(selectedInputIndex).SetAssignedInput(comboPin.value);
+    PopulateDeviceInputSelector();
+    console.log("assignemtn changed");
+
+    SendDeviceInputUpdate(selectedInputIndex);
 }
 
 function onSelectedInputChange() {
     selectedInputIndex = document.getElementById("comboAllInputs").value;
     SetInputControlsFromDevice(selectedInputIndex);
+}
+
+function onAddInput() {
+    device.AddInputDefault();
+    PopulateDeviceInputSelector();
+    document.getElementById("comboAllInputs").value =
+        device.inputs.length - 1;
+    onSelectedInputChange();
+    SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onDeleteInput() {
+    device.DeleteInput(selectedInputIndex);
+    SendDeleteInputRequest(selectedInputIndex);
+    PopulateDeviceInputSelector();
+
+    if (device.inputs.length > 0) {
+        document.getElementById("comboAllInputs").value = 0
+        onSelectedInputChange();
+    } else {
+
+    }
 }
 
 function ClearOptions(selectElement) {
@@ -244,6 +407,7 @@ function AddNewOption(selectElement, text, id) {
 function onSerialErrorOccurred(eventSender, error) {
     console.log("onSerialErrorOccurred", error);
     //pHtmlMsg.html(error);
+    serial.close();
 }
 
 /**
@@ -256,7 +420,7 @@ function onSerialConnectionOpened(eventSender) {
     //pHtmlMsg.html("Serial connection opened successfully");
     SendHandShake();
     document.getElementById("pageConnect").hidden = true;
-    document.getElementById("pageInput").hidden = false;
+    document.getElementById("pageDeviceDetails").hidden = false;
 
 }
 
@@ -301,7 +465,7 @@ function OnEOLReached() {
         receivedData[i] = 0;
     }
     currentByte = -1;
-    console.log("Received: " + data);
+    //console.log("Received: " + data);
     ParseResponse(data);
 }
 
@@ -322,10 +486,23 @@ function SendInputConfigRequest() {
     serial.write(request);
 }
 
-function SendDeviceUpdate(index, sendAll = false) {
+function SendDeleteInputRequest(index) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_DELETE_INPUT_UPDATE);
+    request.push(index);
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    serial.write(request);
+}
+
+function SendDeviceInputUpdate(index, sendAll = false) {
     request = []
     request.push(OUTGOING_REQUEST_HEADER);
     request.push(OUTGOING_INPUT_CONFIG_UPDATE);
+    request.push(index);
+    console.log(request);
     inputData = device.GetInput(index).ToIntArray()
     for (var i = 0; i < inputData.length; i++) {
         request.push(inputData[i]);
@@ -333,6 +510,29 @@ function SendDeviceUpdate(index, sendAll = false) {
     request.push(13);
     request.push(10);
     request = new Uint8Array(request);
+    console.log("SENDING:" + request);
+    serial.write(request);
+}
+
+function SendRequestSaveToFlash() {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_SAVE_TO_FLASH);
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    console.log("SENDING:" + request);
+    serial.write(request);
+}
+
+function SendRequestInputValues() {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_INPUT_VALUES);
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    //console.log("SENDING:" + request);
     serial.write(request);
 }
 
@@ -353,8 +553,19 @@ function ParseInputConfigResponse(response) {
         }
     }
     console.log(device);
-    //SendDeviceUpdate(0);
     InitializeInputControls();
+}
+
+function ParseInputValues(response) {
+    //console.log(response);
+    var inputCount = response[1]
+    for (var i = 0; i < inputCount; i++) {
+        rawVal = response[2 + i * 4] << 8
+        rawVal += response[3 + i * 4]
+        val = response[4 + i * 4] << 8
+        val += response[5 + i * 4]
+        UpdateInputValues(i, rawVal, val)
+    }
 }
 
 function CompareUintArrays(array1, array2) {
@@ -370,9 +581,9 @@ function CompareUintArrays(array1, array2) {
 }
 
 function ParseResponse(response) {
-
-
-    if (CompareUintArrays(response, INCOMING_HANDSHAKE_RESPONSE)) {
+    if (response[0] == INCOMING_RESPONSE_INPUT_VALUES) {
+        ParseInputValues(response);
+    } else if (CompareUintArrays(response, INCOMING_HANDSHAKE_RESPONSE)) {
         OnHandshakeSuccessful();
     } else if (response[0] == INCOMING_CONFIG_RESPONSE) {
         console.log("Device Config Received");
@@ -390,7 +601,16 @@ function ParseResponse(response) {
         console.log("Device Input Update Confirmation Received");
         if (response[2] == 111 && response[3] == 107) {
             console.log("OK");
+            SendRequestSaveToFlash();
         }
+    } else if (response[0] == INCOMING_RESPONSE_DELETE_INPUT_UPDATE) {
+        console.log("Device Input Delete Confirmation Received");
+        if (response[2] == 111 && response[3] == 107) {
+            console.log("OK");
+            SendRequestSaveToFlash();
+        }
+    } else if (response[0] == INCOMING_RESPONSE_SAVE_TO_FLASH) {
+        console.log("Saved to flash confirmed");
     }
 
 }

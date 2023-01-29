@@ -55,6 +55,11 @@ class Device {
         this.deviceBlueprint = deviceBlueprint;
     }
 
+    AddInputDefault() {
+        var newInput = new DeviceInput();
+        this.inputs.push(newInput);
+    }
+
     AddInput(data) {
         console.log("input: " + data);
         var newInput = new DeviceInput();
@@ -62,13 +67,19 @@ class Device {
         this.inputs.push(newInput);
     }
 
+    DeleteInput(index) {
+        this.inputs.splice(index, 1);
+        console.log("deleted index");
+        console.log(this.inputs);
+    }
+
 }
 
 
 class DeviceInput {
     constructor() {
-        this.pin = 0;
-        this.pinMode = 0;
+        this.pin = 2;
+        this.pinMode = 1;
         this.isAnalog = 0;
         this.isInverted = 0;
         this.minVal = 0;
@@ -85,44 +96,88 @@ class DeviceInput {
         return this.pin;
     }
 
+    SetPin(val) {
+        this.pin = val;
+    }
+
     GetPinMode() {
         return this.pinMode;
+    }
+
+    SetPinMode(val) {
+        this.pinMode = val;
     }
 
     GetIsAnalog() {
         return this.isAnalog;
     }
 
+    SetIsAnalog(val) {
+        this.isAnalog = val;
+    }
+
     GetIsInverted() {
         return this.isInverted;
+    }
+
+    SetIsInverted(val) {
+        this.isInverted = val;
     }
 
     GetMinVal() {
         return this.minVal;
     }
 
+    SetMinVal(val) {
+        this.minVal = val;
+    }
+
     GetMidVal() {
         return this.midVal;
+    }
+
+    SetMidVal(val) {
+        this.midVal = val;
     }
 
     GetMaxVal() {
         return this.maxVal;
     }
 
+    SetMaxVal(val) {
+        this.maxVal = val;
+    }
+
     GetDeadZone() {
         return this.deadZone;
+    }
+
+    SetDeadZone(val) {
+        this.deadZone = val;
     }
 
     GetBufferSize() {
         return this.bufferSize;
     }
 
+    SetBufferSize(val) {
+        this.bufferSize = val;
+    }
+
     GetBindingType() {
         return this.binding.GetBindingType()
     }
 
+    SetBindingType(val) {
+        this.binding.SetBindingType(val);
+    }
+
     GetAssignedInput() {
         return this.binding.GetAssignedInput();
+    }
+
+    SetAssignedInput(val) {
+        this.binding.SetAssignedInput(val);
     }
 
     SetFromConfigPacket(data) {
@@ -153,14 +208,14 @@ class DeviceInput {
         bytes.push((this.minVal >> 8)); // highbyte
         bytes.push(this.minVal & 0xff); // lowbyte
 
-        bytes.push((this.minVal >> 8));
-        bytes.push(this.minVal & 0xff);
-
         bytes.push((this.midVal >> 8));
         bytes.push(this.midVal & 0xff);
 
         bytes.push((this.maxVal >> 8));
         bytes.push(this.maxVal & 0xff);
+
+        bytes.push((this.deadZone >> 8));
+        bytes.push(this.deadZone & 0xff);
 
         bytes.push(this.bufferSize);
 
@@ -188,8 +243,16 @@ class Binding {
         return this.inputType;
     }
 
+    SetBindingType(val) {
+        this.inputType = val;
+    }
+
     GetAssignedInput() {
         return this.assignedInput;
+    }
+
+    SetAssignedInput(val) {
+        this.assignedInput = val;
     }
 
     SetFromConfigPacket(data) {

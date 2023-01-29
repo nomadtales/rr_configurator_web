@@ -85,8 +85,8 @@ function GetPinMode(esp32val) {
     }
 }
 
-const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"]
-
+const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"];
+const pinModeInt = [INPUT, INPUT_PULLUP, INPUT_PULLDOWN, OUTPUT];
 
 // HID Input Types
 GAMEPAD_BUTTON = 1 // 1-128
@@ -98,7 +98,7 @@ inputTypes = ["NONE", "BUTTON", "AXIS", "HAT"]
 
 inputsGamepadButtons = ["NONE"]
 for (var i = 1; i < 129; i++) {
-    inputsGamepadButtons.push(i.toString())
+    inputsGamepadButtons.push("Button " + i.toString())
 }
 inputsGamepadAxes = ["X Axis", "Y Axis", "Z Axis", "rX Axis", "rY Axis", "rZ Axis", "Slider 1", "Slider 2"];
 inputsGamepadHatDirections = ["NONE", "N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -112,12 +112,13 @@ for (var i = 1; i < 5; i++) {
 
 // Takes string ("BUTTON", "AXIS") etc and returns list of applicable assignments
 function GetAssignmentList(inputType) {
-    var indexOf = 0;
-    for (var i = 0; i < inputTypes.length; i++) {
-        if (inputTypes[i] == inputType) {
-            indexOf = i;
-        }
-    }
+    // var indexOf = 0;
+    // for (var i = 0; i < inputTypes.length; i++) {
+    //     if (inputTypes[i] == inputType) {
+    //         indexOf = i;
+    //     }
+    // }
+    indexOf = inputType;
 
     if (indexOf == GAMEPAD_BUTTON) {
         return inputsGamepadButtons
