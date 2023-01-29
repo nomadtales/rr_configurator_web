@@ -42,18 +42,53 @@ function setup() {
 
     device = new Device();
 
-
+    setInterval(Update, 200);
 }
 
-function Test() {
+function Update() {
+    if (typeof serial == 'undefined') {} else {
+        if (serial.isOpen()) {
 
+        }
+    }
+}
+
+function Test() {}
+
+function InitializeInputControls() {
+    PopulateDeviceInputSelector();
 
     PopulatePinList();
     PopulatePinModeList();
     PopulateIsAnalogList();
     PopulateBindingTypeList();
     PopulateBindingAssignmentList();
-    SetInputControlsFromDevice(0);
+    if (device.inputs.length > 0) {
+        SetInputControlsFromDevice(0);
+    }
+}
+
+function PopulateDeviceInputSelector() {
+    inputList = device.inputs;
+    selector = document.getElementById("comboAllInputs");
+    ClearOptions(selector);
+    for (var i = 0; i < inputList.length; i++) {
+        for (var i = 0; i < inputList.length; i++) {
+            AddNewOption(selector, inputList[i].GetPin(), i);
+        }
+    }
+    selector.value = 0;
+}
+
+function SetDeviceDescriptionFromDevice() {
+    document.getElementById("labelDeviceName").innerText =
+        device.GetDeviceName();
+
+    document.getElementById("labelDeviceType").innerText =
+        device.GetDeviceType();
+
+    document.getElementById("labelFirmwareVersion").innerText =
+        device.GetFirmwareVersion();
 }
 
 function SetInputControlsFromDevice(idx) {
@@ -77,8 +112,20 @@ function SetInputControlsFromDevice(idx) {
     document.getElementById("checkInverted").checked =
         device.GetInput(idx).GetIsInverted();
 
+    document.getElementById("inputMinVal").value =
+        device.GetInput(idx).GetMinVal();
 
+    document.getElementById("inputMidVal").value =
+        device.GetInput(idx).GetMidVal();
 
+    document.getElementById("inputMaxVal").value =
+        device.GetInput(idx).GetMaxVal();
+
+    document.getElementById("inputDeadZone").value =
+        device.GetInput(idx).GetDeadZone();
+
+    document.getElementById("inputFilterSize").value =
+        device.GetInput(idx).GetBufferSize();
 
 }
 
@@ -145,6 +192,11 @@ function PopulateBindingAssignmentList() {
 function onBindingTypeChange() {
     console.log("ONCHANGE");
     PopulateBindingAssignmentList();
+}
+
+function onSelectedInputChange() {
+    selectedInputIndex = document.getElementById("comboAllInputs").value;
+    SetInputControlsFromDevice(selectedInputIndex);
 }
 
 function ClearOptions(selectElement) {
@@ -286,7 +338,7 @@ function ParseInputConfigResponse(response) {
     }
     console.log(device);
     //SendDeviceUpdate(0);
-    LoadInputFromDevice(0);
+    InitializeInputControls();
 }
 
 function CompareUintArrays(array1, array2) {
@@ -310,6 +362,8 @@ function ParseResponse(response) {
         console.log("Device Config Received");
         device.SetFromConfigPacket(response);
         device.SetDeviceBlueprint(GetDeviceTarget(device.microcontroller));
+        InitializeInputControls();
+        SetDeviceDescriptionFromDevice();
         SendInputConfigRequest();
 
     } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE) {
@@ -323,12 +377,4 @@ function ParseResponse(response) {
         }
     }
 
-}
-
-function LoadInputFromDevice(idx) {
-    //document.getElementById("inputPin").textContent = "hello";
-    //t = document.getElementById("inputPin").options[document.getElementById("select").selectedIndex].text;
-    //console.log(t);
-    //console.log("inputpin");
-    //console.log($('#inputPin'));
 }

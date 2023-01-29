@@ -26,6 +26,18 @@ class Device {
         return inputPins;
     }
 
+    GetDeviceName() {
+        return this.deviceName;
+    }
+
+    GetDeviceType() {
+        return this.deviceBlueprint.microcontrollerName;
+    }
+
+    GetFirmwareVersion() {
+        return this.firmwareVersion;
+    }
+
     GetInput(idx) {
         return this.inputs[idx];
     }
@@ -101,16 +113,16 @@ class DeviceInput {
         return this.deadZone;
     }
 
+    GetBufferSize() {
+        return this.bufferSize;
+    }
+
     GetBindingType() {
         return this.binding.GetBindingType()
     }
 
     GetAssignedInput() {
         return this.binding.GetAssignedInput();
-    }
-
-    GetBufferSize() {
-        return this.bufferSize;
     }
 
     SetFromConfigPacket(data) {
