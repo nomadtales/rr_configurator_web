@@ -8,7 +8,9 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + "/public/" + "test.html");
 })
 
-
+app.get('/upload', (req, res) => {
+    res.sendFile(__dirname + "/public/esphome/" + "index.html");
+})
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

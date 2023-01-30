@@ -29,6 +29,13 @@ const OUTGOING_REQUEST_SAVE_TO_FLASH = 112
 const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 
 
+function asdf() {
+
+}
+async function clickConnect() {
+
+}
+
 // 
 // currentByte = 0;
 
