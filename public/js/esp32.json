@@ -4,6 +4,6 @@
     "home_assistant_domain": "slim_player",
     "builds": [{
         "chipFamily": "ESP32",
-        "parts": [{ "path": "firmware/rr_controller_esp32.bin", "offset": 0 }]
+        "parts": [{ "path": "../firmware/rr_controller_esp32.bin", "offset": 0 }]
     }]
 }
