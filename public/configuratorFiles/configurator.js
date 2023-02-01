@@ -89,7 +89,7 @@ function Update() {
     if (waitingOnHandshake) {
         now = new Date();
         var timeDiff = now - waitStart; //in ms
-        if (timeDiff > 50) {
+        if (timeDiff > 100) {
             console.log("failed handshake");
             waitingOnHandshake = false;
             SetErrorText("Error: Handshake Failed. Did you flash the firmware yet?");

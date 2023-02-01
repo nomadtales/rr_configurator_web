@@ -12,10 +12,10 @@
             import ("./modules/esptool.js");
     </script> -->
     <!-- <script type="module" src="./modules/esptool.js"></script> -->
-    <script type="text/javascript" src="./js/configurator.js"></script>
-    <script type="text/javascript" src="./js/device.js"></script>
-    <script type="text/javascript" src="./js/constant.js"></script>
-    <script type="text/javascript" src="./js/serial.js"></script>
+    <script type="text/javascript" src="./configuratorFiles/configurator.js"></script>
+    <script type="text/javascript" src="./configuratorFiles/device.js"></script>
+    <script type="text/javascript" src="./configuratorFiles/constant.js"></script>
+    <script type="text/javascript" src="./configuratorFiles/serial.js"></script>
     <script type="module" src="https://unpkg.com/esp-web-tools@8.0.1/dist/web/install-button.js?module"></script>
 </head>
 
@@ -49,7 +49,7 @@
 
                         </div>
                         <div class="col-sm-2">
-                            <esp-web-install-button manifest="./js/esp32.json">
+                            <esp-web-install-button manifest="./configuratorFiles/esp32.json">
                                 <button slot="activate">Upload Firmware to ESP32</button>
                                 <span slot="unsupported">Cannot use serial with this browser!</span>
                                 <span slot="not-allowed">HTTPS only</span>
