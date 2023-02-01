@@ -29,6 +29,10 @@ const OUTGOING_REQUEST_SAVE_TO_FLASH = 112
 const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 
 
+var waitingOnHandshake = false;
+let waitStart
+
+
 function asdf() {
 
 }
@@ -40,6 +44,7 @@ async function clickConnect() {
 // currentByte = 0;
 
 function setup() {
+    SetErrorText("");
     //createCanvas(640, 480);
     receivedData = new Uint8Array(256);
     currentByte = 0;
@@ -52,7 +57,7 @@ function setup() {
     serial.on(SerialEvents.ERROR_OCCURRED, onSerialErrorOccurred);
 
     // If we have previously approved ports, attempt to connect with them
-    serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
+    serial.open(serialOptions);
 
     // Add in a lil <p> element to provide messages. This is optional
     //pHtmlMsg = createP("Click anywhere on this page to open the serial connection dialog");
@@ -62,23 +67,58 @@ function setup() {
     setInterval(Update, 50);
 }
 
+async function disconnect() {
+    console.log("DISCONNECT");
+    await serial.close();
+    //serial = null
+    device = null;
+    document.getElementById("pageConnect").hidden = false;
+    document.getElementById("pageDeviceDetails").hidden = true;
+    document.getElementById("pageInput").hidden = true;
+}
+
 function Update() {
+
     if (typeof serial == 'undefined') {} else {
         if (serial.isOpen()) {
+            //console.log(serial);
             SendRequestInputValues();
+        }
+    }
+
+    if (waitingOnHandshake) {
+        now = new Date();
+        var timeDiff = now - waitStart; //in ms
+        if (timeDiff > 50) {
+            console.log("failed handshake");
+            waitingOnHandshake = false;
+            SetErrorText("Error: Handshake Failed. Did you flash the firmware yet?");
+
+            disconnect();
         }
     }
 }
 
-function Test() {
-    serial.close();
+function SetErrorText(text) {
+    document.getElementById("errorText").innerText = text
 }
+
+function Test() {}
 
 function UpdateInputValues(inputIdx, raw, calibrated) {
     if (inputIdx == selectedInputIndex) {
         document.getElementById("labelRawValue").innerText = raw;
         document.getElementById("progressBarCalibrated").style.animation = false;
         //console.log(calibrated + ", " + Math.round((calibrated / 32767) * 100));
+
+        if (device != null) {
+            isAnalog = device.GetInput(inputIdx).GetIsAnalog();
+        }
+
+        if (isAnalog == 0) {
+            calibrated = calibrated * 32767;
+        }
+
         document.getElementById("progressBarCalibrated").value =
             ((calibrated / 32767) * 100).toFixed(2);
     }
@@ -151,8 +191,10 @@ function SetInputControlsFromDevice(idx) {
     SetComboBoxValue("inputPinMode", device.GetInput(idx).GetPinMode());
     //console.log(device.GetInput(idx).GetPinMode());
 
+    isAnalog = device.GetInput(idx).GetIsAnalog()
     SetComboBoxValue("comboAnalogMode",
-        device.GetInput(idx).GetIsAnalog());
+        isAnalog);
+    HideAnalogControls(isAnalog == 0);
 
     bindingType = device.GetInput(idx).GetBindingType()
     SetComboBoxValue("comboBindingType", bindingType);
@@ -270,7 +312,13 @@ function onAnalogModeChange() {
         comboPin.value);
     device.GetInput(selectedInputIndex).SetIsAnalog(comboPin.value);
 
+    HideAnalogControls(comboPin.value == 0);
+
     SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function HideAnalogControls(doHide) {
+    document.getElementById("analogControls").hidden = doHide;
 }
 
 function onIsInvertedChange() {
@@ -479,11 +527,14 @@ function OnEOLReached() {
 function SendHandShake() {
     console.log("sending handshake");
     request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_HANDSHAKE_REQUEST, 13, 10]);
+    waitStart = new Date();
+    waitingOnHandshake = true;
     serial.write(request);
 }
 
 function SendDeviceConfigRequest() {
     request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_CONFIG_REQUEST, 13, 10]);
+    waitingOn = INCOMING_CONFIG_RESPONSE;
     serial.write(request);
 }
 
@@ -546,6 +597,7 @@ function SendRequestInputValues() {
 function OnHandshakeSuccessful() {
 
     console.log("Handshake Response Received");
+    waitingOnHandshake = false;
     SendDeviceConfigRequest();
 }
 
