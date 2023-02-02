@@ -104,6 +104,10 @@
                             <button id="buttonAddInput" onclick="onAddInput()" class="btn btn-primary" type="button">
                                 Add Input
                             </button>
+
+                            <button id="buttonMacros" onclick="onOpenMacroPage()" class="btn btn-primary" type="button">
+                                Macros
+                            </button>
                         </div>
 
                         <div class="dropdown col-sm-2 float-end">
@@ -117,6 +121,26 @@
                 </br>
                 </br>
                 </br>
+
+                <div id="pageMacros" class="container" hidden>
+
+                    <div class="row text-center ">
+                        <h3>Macro Management</h3>
+
+                    </div>
+                    <hr class="bg-primary border-2 border-top border-primary">
+                    <div class="row">
+                        <div class="dropdown col-sm-3">
+                            <select id="comboAllMacros" onchange="onSelectedMacroChange()" class="form-select" aria-label="Default select example">
+                                <option value="1">2&emsp;&ensp;XAXIS</option>
+                                <option value="2">3&emsp;&ensp;BUTTON 3</option>
+                                <option value="3">4&emsp;&ensp;NONE</option>
+                                <option value="4">39&ensp;&ensp;HAT 1 NE</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div id="pageInput" class="container" hidden>
 
@@ -267,12 +291,15 @@
                         <h4>Compatible Devices:</h4>
                         <p>ESP32</p>
                         <h4>Instructions:</h4>
-                        <p>Connect ESP32 to PC via USB, click the "Upload Firmware to ESP32" to flash the firmware</p>
+                        <p>Connect ESP32 to PC via USB, click the "Upload Firmware to ESP32" to flash the firmware
+                        </p>
                         <p>After firmware is flashed you can press "Connect" to open the configurator and set up your input configuration.
                         </p>
                         <p>Any time firmware is flashed it is recommended to unpair/pair the device again using your operating systems bluetooth console.</p>
                         <p>Test inputs using the online <a href="https://gamepad-tester.com/">Gamepad Tester</a></p>
                         <p>Please report any bugs or suggestions on the RealRobots <a href="https://discord.gg/qXGwBBZmQy">Discord</a></p>
+                        <p>Code available on <a href="https://gitlab.com/realrobots/rr_configurator_web">GitLab</a>.
+                        </p>
                     </div>
                 </div>
             </div>

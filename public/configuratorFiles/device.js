@@ -10,6 +10,8 @@ class Device {
         this.inputCount = 3;
         this.inputsLocked = true;
 
+        this.macros = [];
+
         // var newInput = new DeviceInput();
         // //newInput.SetFromConfigPacket(data);
         // this.inputs.push(newInput);
@@ -53,6 +55,15 @@ class Device {
 
     SetDeviceBlueprint(deviceBlueprint) {
         this.deviceBlueprint = deviceBlueprint;
+    }
+
+    AddNewMacro() {
+        var newMacro = new Macro();
+        this.macros.push(newMacro);
+    }
+
+    GetMacro(idx) {
+        return this.macros[idx];
     }
 
     AddInputDefault() {
@@ -225,6 +236,24 @@ class DeviceInput {
         }
 
         return bytes;
+    }
+}
+
+class Macro {
+    constructor() {
+        this.macroName = "New Macro";
+        this.bindings = []
+
+        this.AddBinding();
+    }
+
+    AddBinding() {
+        var newBinding = new Binding();
+        this.bindings.push(newBinding);
+    }
+
+    GetBinding(idx) {
+        return this.bindings[idx];
     }
 }
 

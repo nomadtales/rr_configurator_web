@@ -409,6 +409,8 @@ function onBindingAssignmentChange() {
 function onSelectedInputChange() {
     selectedInputIndex = document.getElementById("comboAllInputs").value;
     SetInputControlsFromDevice(selectedInputIndex);
+    document.getElementById("pageInput").hidden = false;
+    document.getElementById("pageMacros").hidden = true;
 }
 
 function onAddInput() {
@@ -418,6 +420,11 @@ function onAddInput() {
         device.inputs.length - 1;
     onSelectedInputChange();
     SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onOpenMacroPage() {
+    document.getElementById("pageInput").hidden = true;
+    document.getElementById("pageMacros").hidden = false;
 }
 
 function onDeleteInput() {
