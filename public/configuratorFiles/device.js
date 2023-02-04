@@ -7,10 +7,12 @@ class Device {
 
         this.deviceBlueprint;
         this.inputs = [];
-        this.inputCount = 3;
         this.inputsLocked = true;
 
         this.macros = [];
+
+        this.inputsLoaded = 0;
+        this.macrosLoaded = 0;
 
         // var newInput = new DeviceInput();
         // //newInput.SetFromConfigPacket(data);
@@ -18,7 +20,15 @@ class Device {
 
     }
 
+    AllInputsLoaded() {
+        return this.inputCount == this.inputsLoaded;
+    }
+
     GetBlueprintInputList() {
+        if (this.deviceBlueprint == null) {
+            console.log("blueprint not assigned yet");
+            return [];
+        }
         var inputPins = []
         for (var i = 0; i < this.deviceBlueprint.pins.length; i++) {
             if (this.deviceBlueprint.pins[i].input == 1) {
@@ -76,12 +86,36 @@ class Device {
         var newInput = new DeviceInput();
         newInput.SetFromConfigPacket(data);
         this.inputs.push(newInput);
+        this.inputsLoaded += 1;
     }
 
     DeleteInput(index) {
         this.inputs.splice(index, 1);
         console.log("deleted index");
         console.log(this.inputs);
+    }
+
+    AddMacroFromConfig(data, startAddress) {
+        var newMacro = new Macro();
+        this.macros.push(newMacro)
+
+        var nameArray = data.slice(startAddress, startAddress + 16);
+        var macroName = new TextDecoder().decode(nameArray);
+
+        var bindingCount = data[startAddress + 16];
+
+
+        for (var b = 0; b < bindingCount; b++) {
+            var newBinding = new Binding();
+            newMacro.AddBinding(newBinding);
+
+            var start = startAddress + 17 + (7 * b);
+            var end = start + 7;
+            var snippedData = data.slice(start, end)
+            newBinding.SetFromConfigPacket(snippedData)
+        }
+
+
     }
 
 }
@@ -247,6 +281,10 @@ class Macro {
         this.AddBinding();
     }
 
+    SetMacroName(newName) {
+        this.macroName = newName;
+    }
+
     AddBinding() {
         var newBinding = new Binding();
         this.bindings.push(newBinding);
@@ -285,9 +323,10 @@ class Binding {
     }
 
     SetFromConfigPacket(data) {
+        console.log(data);
         this.deviceType = data[13]
         this.inputType = data[14]
-        console.log("INPUT TYPE: " + this.inputType);
+            //console.log("INPUT TYPE: " + this.inputType);
         this.assignedInput = data[15]
         this.value = data[16] << 8
         this.value += data[17]

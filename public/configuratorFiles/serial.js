@@ -101,6 +101,6 @@ class Serial {
     }
 
     isOpen() {
-        return this.serialPort;
+        return this.serialPort && this.serialReader;
     }
 }

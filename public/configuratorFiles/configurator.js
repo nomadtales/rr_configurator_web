@@ -5,16 +5,26 @@ let currentByte;
 let device;
 let selectedInputIndex = 0;
 
-const OUTGOING_REQUEST_HEADER = 36 // '$'
-const OUTGOING_HANDSHAKE_REQUEST = 72 // 'H'
+const PRINT_INCOMING_MESSAGES = false;
+const PRINT_OUTGOING_MESSAGES = false;
 
-const INCOMING_HANDSHAKE_RESPONSE = new Uint8Array([72, 101, 108, 108, 111, 32, 121, 111, 117, 114, 115, 101, 108, 102, 33, 13, 10]);
+const HANDSHAKE_TIMEOUT = 250;
+
+const OUTGOING_REQUEST_HEADER = 36; // '$'
+const INCOMING_RESPONSE_HEADER = 37; // '#'
+
+const OUTGOING_HANDSHAKE_REQUEST = 72; // 'H'
+
+const INCOMING_HANDSHAKE_RESPONSE = 72; //new Uint8Array([72, 101, 108, 108, 111, 32, 121, 111, 117, 114, 115, 101, 108, 102, 33, 13, 10]);
 
 const OUTGOING_CONFIG_REQUEST = 100;
 const INCOMING_CONFIG_RESPONSE = 101;
 
-const OUTGOING_INPUT_CONFIG_REQUEST = 104;
-const INCOMING_INPUT_CONFIG_RESPONSE = 105;
+const OUTGOING_INPUT_CONFIG_REQUEST = 102;
+const INCOMING_INPUT_CONFIG_RESPONSE = 103;
+
+const OUTGOING_INPUT_CONFIG_REQUEST_ALL = 104;
+const INCOMING_INPUT_CONFIG_RESPONSE_ALL = 105;
 
 const OUTGOING_INPUT_CONFIG_UPDATE = 106
 const INCOMING_INPUT_CONFIG_UPDATE_RESPONSE = 107
@@ -28,20 +38,46 @@ const INCOMING_RESPONSE_INPUT_VALUES = 111
 const OUTGOING_REQUEST_SAVE_TO_FLASH = 112
 const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 
+const OUTGOING_REQUEST_MACRO_CONFIG = 114;
+const INCOMING_RESPONSE_MACRO_CONFIG = 115;
+
+function CodeToString(code) {
+    switch (code) {
+        case INCOMING_HANDSHAKE_RESPONSE:
+            return "INCOMING_HANDSHAKE_RESPONSE";
+        case INCOMING_CONFIG_RESPONSE:
+            return "INCOMING_CONFIG_RESPONSE";
+        case INCOMING_INPUT_CONFIG_RESPONSE:
+            return "INCOMING_INPUT_CONFIG_RESPONSE";
+        case INCOMING_INPUT_CONFIG_RESPONSE_ALL:
+            return "INCOMING_INPUT_CONFIG_RESPONSE_ALL";
+        case INCOMING_INPUT_CONFIG_UPDATE_RESPONSE:
+            return "INCOMING_INPUT_CONFIG_UPDATE_RESPONSE";
+        case INCOMING_RESPONSE_DELETE_INPUT_UPDATE:
+            return "INCOMING_RESPONSE_DELETE_INPUT_UPDATE";
+        case INCOMING_RESPONSE_INPUT_VALUES:
+            return "INCOMING_RESPONSE_INPUT_VALUES";
+        case INCOMING_RESPONSE_SAVE_TO_FLASH:
+            return "INCOMING_RESPONSE_SAVE_TO_FLASH";
+        case INCOMING_RESPONSE_MACRO_CONFIG:
+            return "INCOMING_RESPONSE_MACRO_CONFIG";
+
+        default:
+            return "UNKNOWN HEADER";
+    }
+}
 
 var waitingOnHandshake = false;
 let waitStart
 
+var queuedMessages = [];
+var lastSent;
+var serialBusy = false;
+var serialWaitingOn = 0; // INCOMING_RESPONSE_*
+var sendAttempts = 0;
 
-function asdf() {
+var isConnected = false;
 
-}
-async function clickConnect() {
-
-}
-
-// 
-// currentByte = 0;
 
 function setup() {
     SetErrorText("");
@@ -65,6 +101,7 @@ function setup() {
     device = new Device();
 
     setInterval(Update, 50);
+    LockControls(true);
 }
 
 async function disconnect() {
@@ -75,6 +112,11 @@ async function disconnect() {
     document.getElementById("pageConnect").hidden = false;
     document.getElementById("pageDeviceDetails").hidden = true;
     document.getElementById("pageInput").hidden = true;
+    document.getElementById("pageMacros").hidden = true;
+    isConnected = false;
+    serialWaitingOn = 0;
+    queuedMessages = [];
+    LockControls(false);
 }
 
 function Update() {
@@ -82,21 +124,37 @@ function Update() {
     if (typeof serial == 'undefined') {} else {
         if (serial.isOpen()) {
             //console.log(serial);
-            SendRequestInputValues();
+
+            //console.log(serialWaitingOn);
+            if (serialWaitingOn != 0) {
+                //console.log(serialWaitingOn);
+                var timeDiff = new Date() - waitStart;
+                if (timeDiff > HANDSHAKE_TIMEOUT) {
+                    console.log("Timed out waiting on " + CodeToString(serialWaitingOn));
+                    SendRequest(lastSent, serialWaitingOn); // ReSend
+                }
+            } else {
+                if (queuedMessages.length > 0) {
+                    message = queuedMessages.shift();
+                    SendRequest(message[0], message[1]);
+                } else if (device.inputs.length > 0) {
+                    SendRequestInputValues();
+                }
+            }
         }
     }
 
-    if (waitingOnHandshake) {
-        now = new Date();
-        var timeDiff = now - waitStart; //in ms
-        if (timeDiff > 100) {
-            console.log("failed handshake");
-            waitingOnHandshake = false;
-            SetErrorText("Error: Handshake Failed. Did you flash the firmware yet?");
+    // if (waitingOnHandshake) {
+    //     now = new Date();
+    //     var timeDiff = now - waitStart; //in ms
+    //     if (timeDiff > HANDSHAKE_TIMEOUT) {
+    //         console.log("failed handshake");
+    //         waitingOnHandshake = false;
+    //         SetErrorText("Error: Handshake Failed. Did you flash the firmware yet?");
 
-            disconnect();
-        }
-    }
+    //         disconnect();
+    //     }
+    // }
 }
 
 function SetErrorText(text) {
@@ -135,6 +193,7 @@ function InitializeInputControls() {
     if (device.inputs.length > 0) {
         SetInputControlsFromDevice(0);
     }
+    document.getElementById("comboAllInputs").value = 0;
 }
 
 function PopulateDeviceInputSelector() {
@@ -151,7 +210,7 @@ function PopulateDeviceInputSelector() {
 
     let bindingType
         // assignmentList = GetAssignmentList(bindingType);
-    console.log("len: " + inputList.length);
+        //console.log("len: " + inputList.length);
     for (var i = 0; i < inputList.length; i++) {
         console.log("i:" + i);
         bindingType = device.GetInput(i).GetBindingType();
@@ -414,6 +473,7 @@ function onSelectedInputChange() {
 }
 
 function onAddInput() {
+    LockControls(true);
     device.AddInputDefault();
     PopulateDeviceInputSelector();
     document.getElementById("comboAllInputs").value =
@@ -531,24 +591,68 @@ function OnEOLReached() {
     ParseResponse(data);
 }
 
+function SendRequest(request, returnCode) {
+    waitStart = new Date();
+    lastSent = request;
+
+    if (serialWaitingOn != 0) {
+        console.warn("TOO BUSY TO SEND " + request);
+        console.warn("Waiting on: " + returnCode + ": " + CodeToString(returnCode));
+        console.log(queuedMessages);
+
+        if (returnCode != INCOMING_RESPONSE_INPUT_VALUES) {
+            if (serialWaitingOn == returnCode) {
+                sendAttempts += 1;
+                console.log("ATTEMPTS: " + sendAttempts);
+                // Send again if same
+                serial.write(request);
+
+            } else {
+                // Otherwise add to queue
+                queuedMessages.push([request, returnCode, 0])
+            }
+
+        } else {
+            queuedMessages = [];
+            serialWaitingOn = 0;
+        }
+    } else {
+        serialWaitingOn = returnCode;
+        sendAttempts = 0;
+        serial.write(request);
+        if (PRINT_OUTGOING_MESSAGES) {
+            console.log("SEND: " + request);
+        }
+    }
+}
+
 function SendHandShake() {
     console.log("sending handshake");
     request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_HANDSHAKE_REQUEST, 13, 10]);
-    waitStart = new Date();
-    waitingOnHandshake = true;
-    serial.write(request);
+    //waitStart = new Date();
+    //waitingOnHandshake = true;
+    //serial.write(request);
+    SendRequest(request, INCOMING_HANDSHAKE_RESPONSE);
 }
 
-function SendDeviceConfigRequest() {
+function SendDeviceConfigRequest(idx) {
     request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_CONFIG_REQUEST, 13, 10]);
-    waitingOn = INCOMING_CONFIG_RESPONSE;
-    serial.write(request);
+    SendRequest(request, INCOMING_CONFIG_RESPONSE);
+    //serial.write(request);
 }
 
-function SendInputConfigRequest() {
-    console.log("Sending input config request");
-    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_INPUT_CONFIG_REQUEST, 13, 10]);
-    serial.write(request);
+function SendInputConfigRequestAll() {
+    console.log("Sending input config request All");
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_INPUT_CONFIG_REQUEST_ALL, 13, 10]);
+
+    SendRequest(request, INCOMING_INPUT_CONFIG_RESPONSE_ALL);
+}
+
+function SendInputConfigRequest(idx) {
+    console.log("Sending input config request " + idx);
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_INPUT_CONFIG_REQUEST, idx, 13, 10]);
+
+    SendRequest(request, INCOMING_INPUT_CONFIG_RESPONSE);
 }
 
 function SendDeleteInputRequest(index) {
@@ -559,7 +663,9 @@ function SendDeleteInputRequest(index) {
     request.push(13);
     request.push(10);
     request = new Uint8Array(request);
-    serial.write(request);
+    SendRequest(request, INCOMING_RESPONSE_DELETE_INPUT_UPDATE);
+    LockControls(true);
+    //serial.write(request);
 }
 
 function SendDeviceInputUpdate(index, sendAll = false) {
@@ -598,7 +704,8 @@ function SendRequestInputValues() {
     request.push(10);
     request = new Uint8Array(request);
     //console.log("SENDING:" + request);
-    serial.write(request);
+    SendRequest(request, INCOMING_RESPONSE_INPUT_VALUES);
+
 }
 
 function OnHandshakeSuccessful() {
@@ -609,6 +716,12 @@ function OnHandshakeSuccessful() {
 }
 
 function ParseInputConfigResponse(response) {
+    var inputIdx = response[1];
+    console.log("received input: " + inputIdx);
+    device.AddInput(response.slice(2, 20 + 2));
+}
+
+function ParseInputConfigResponseAll(response) {
     var inputCount = response[1];
     if (inputCount == 0) {
         console.log("No inputs")
@@ -618,6 +731,20 @@ function ParseInputConfigResponse(response) {
             device.AddInput(response.slice(i + 2, i + 20 + 2));
         }
     }
+    // var macroAddress = inputCount * 20 + 2;
+    // var macroCount = response[macroAddress];
+
+    // macroAddress = macroAddress + 1
+    // if (macroCount > 0) {
+    //     currentMacro = 0;
+    //     byteCount = device.AddMacroFromConfig(response, macroAddress);
+    // }
+
+
+    // console.log("bindgin counr: " + bindingCount);
+    // for (var i = macroAddress + 1; i < response.length; i++) {
+    //     console.log(i + ": " + response[i]);
+    // }
     console.log(device);
     InitializeInputControls();
 }
@@ -647,29 +774,74 @@ function CompareUintArrays(array1, array2) {
 }
 
 function ParseResponse(response) {
+    if (response[0] == INCOMING_RESPONSE_HEADER) {
+        temp = []
+        for (var i = 1; i < response.length; i++) {
+            temp.push(response[i]);
+        }
+        response = temp;
+    } else {
+        console.log("INVALID: " + response);
+        return;
+    }
+
+    if (PRINT_INCOMING_MESSAGES) {
+        console.log("RECV: " + response);
+    }
+
     if (response[0] == INCOMING_RESPONSE_INPUT_VALUES) {
+        serialWaitingOn = 0;
         ParseInputValues(response);
-    } else if (CompareUintArrays(response, INCOMING_HANDSHAKE_RESPONSE)) {
+
+    } else if (response[0] == INCOMING_HANDSHAKE_RESPONSE) {
+        serialWaitingOn = 0;
         OnHandshakeSuccessful();
+        isConnected = true;
+
     } else if (response[0] == INCOMING_CONFIG_RESPONSE) {
         console.log("Device Config Received");
+        serialWaitingOn = 0;
         device.SetFromConfigPacket(response);
         device.SetDeviceBlueprint(GetDeviceTarget(device.microcontroller));
         InitializeInputControls();
         SetDeviceDescriptionFromDevice();
-        SendInputConfigRequest();
+
+        console.log("Sending input request: " + device.AllInputsLoaded());
+        if (!device.AllInputsLoaded()) {
+            SendInputConfigRequest(device.inputsLoaded);
+        } else {
+            LockControls(false);
+        }
+
 
     } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE) {
         console.log("Device Input Config Received");
+        serialWaitingOn = 0;
         ParseInputConfigResponse(response);
+        if (!device.AllInputsLoaded()) {
+            SendInputConfigRequest(device.inputsLoaded);
+        } else {
+            console.log("Received All Input Configs");
+            InitializeInputControls();
+            LockControls(false);
+        }
+
+    } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE_ALL) {
+        serialWaitingOn = 0;
+        console.log("Device Input Config Received");
+        ParseInputConfigResponseAll(response);
+
 
     } else if (response[0] == INCOMING_INPUT_CONFIG_UPDATE_RESPONSE) {
+        serialWaitingOn = 0;
         console.log("Device Input Update Confirmation Received");
         if (response[2] == 111 && response[3] == 107) {
             console.log("OK");
             SendRequestSaveToFlash();
         }
+        serialWaitingOn = 0;
     } else if (response[0] == INCOMING_RESPONSE_DELETE_INPUT_UPDATE) {
+        serialWaitingOn = 0;
         console.log("Device Input Delete Confirmation Received");
         if (response[2] == 111 && response[3] == 107) {
             console.log("OK");
@@ -677,6 +849,34 @@ function ParseResponse(response) {
         }
     } else if (response[0] == INCOMING_RESPONSE_SAVE_TO_FLASH) {
         console.log("Saved to flash confirmed");
+        serialWaitingOn = 0;
+        LockControls(false);
     }
 
+}
+
+
+function LockControls(lock) {
+    // Input selector
+    document.getElementById("comboAllInputs").disabled = lock;
+
+    // Input page
+    document.getElementById("inputPin").disabled = lock;
+    document.getElementById("inputPinMode").disabled = lock;
+    document.getElementById("comboAnalogMode").disabled = lock;
+    document.getElementById("comboBindingType").disabled = lock;
+    document.getElementById("comboBindingAssignment").disabled = lock;
+    document.getElementById("checkInverted").disabled = lock;
+    document.getElementById("inputMinVal").disabled = lock;
+    document.getElementById("inputMidVal").disabled = lock;
+    document.getElementById("inputMaxVal").disabled = lock;
+    document.getElementById("inputDeadZone").disabled = lock;
+    document.getElementById("inputFilterSize").disabled = lock;
+
+
+    // All buttons
+    var elements = document.getElementsByClassName("btn");
+    for (var i = 0; i < elements.length; i++) {
+        elements[i].disabled = lock;
+    }
 }
