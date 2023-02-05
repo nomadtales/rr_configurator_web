@@ -1,4 +1,4 @@
-scp ./public/configurator.html ./joystickshop/public/
-mv ./joystickshop/public/configurator.html ./joystickshop/views/configurator.ejs
+scp ./public/configurator.html /root/joystickshop/public/
+mv ./joystickshop/public/configurator.html /root/joystickshop/views/configurator.ejs
 
-scp -r ./public/configuratorFiles/ ./joystickshop/public/
+scp -r ./public/configuratorFiles/ /root/joystickshop/public/
