@@ -1,5 +1,4 @@
 BUGFIXES
-- Problems connecting after upload?
 
 
 FEATURES
@@ -15,7 +14,7 @@ FEATURES
 - Simplified version for ATMEGA32U4
 - Allow changing of device name -> enforce name on bluetooth pairing. (not hid, need to register for those names)
 - Allow selecting of different analog axes such as Steering, Brake and Rudder.
-
+- Implement full set of gamepad axes for RP2040
 
 
 

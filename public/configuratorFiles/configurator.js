@@ -1,3 +1,5 @@
+const GUI_VERSION = "V1.0.1"
+console.log("VERSION: " + GUI_VERSION);
 let serialOptions = { baudRate: 115200 };
 let serial;
 let receivedData;
