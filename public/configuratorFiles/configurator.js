@@ -847,7 +847,7 @@ function ParseResponse(response) {
             console.log("OK");
             //SendRequestSaveToFlash();
         }
-        serialWaitingOn = 0;
+        LockControls(false);
     } else if (response[0] == INCOMING_RESPONSE_DELETE_INPUT_UPDATE) {
         serialWaitingOn = 0;
         console.log("Device Input Delete Confirmation Received");
@@ -855,6 +855,7 @@ function ParseResponse(response) {
             console.log("OK");
             //SendRequestSaveToFlash();
         }
+        LockControls(false);
     } else if (response[0] == INCOMING_RESPONSE_SAVE_TO_FLASH) {
         console.log("Saved to flash confirmed");
         serialWaitingOn = 0;
