@@ -77,13 +77,13 @@ class Device {
     }
 
     AddInputDefault() {
-        var newInput = new DeviceInput();
+        var newInput = new DeviceInput(this.deviceBlueprint.PWM_MAX);
         this.inputs.push(newInput);
     }
 
     AddInput(data) {
         console.log("input: " + data);
-        var newInput = new DeviceInput();
+        var newInput = new DeviceInput(this.deviceBlueprint.PWM_MAX);
         newInput.SetFromConfigPacket(data);
         this.inputs.push(newInput);
         this.inputsLoaded += 1;
@@ -93,6 +93,25 @@ class Device {
         this.inputs.splice(index, 1);
         console.log("deleted index");
         console.log(this.inputs);
+    }
+
+    // Constant for pinMode is different for 
+    // different microcontrollers. Defined
+    // in the blueprint.
+    GetPinModeInt(idx) {
+        //console.log(this.deviceBlueprint);
+        switch (idx) {
+            case 0:
+                return this.deviceBlueprint.INPUT;
+            case 1:
+                return this.deviceBlueprint.INPUT_PULLUP;
+            case 2:
+                return this.deviceBlueprint.INPUT_PULLDOWN;
+            case 3:
+                return this.deviceBlueprint.OUTPUT;
+            default:
+                return 0;
+        }
     }
 
     AddMacroFromConfig(data, startAddress) {
@@ -122,15 +141,15 @@ class Device {
 
 
 class DeviceInput {
-    constructor() {
+    constructor(pwm_max) {
         this.pin = 2;
         this.pinMode = 1;
         this.isAnalog = 0;
         this.isInverted = 0;
         this.minVal = 0;
-        this.midVal = 2048;
-        this.maxVal = 4096;
-        this.deadZone = 512;
+        this.midVal = Math.round(pwm_max / 2);
+        this.maxVal = pwm_max;
+        this.deadZone = Math.round(pwm_max / 16);
         this.bufferSize = 0;
 
         this.binding = new Binding();

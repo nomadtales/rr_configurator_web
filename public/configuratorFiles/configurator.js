@@ -119,6 +119,11 @@ async function disconnect() {
     LockControls(false);
 }
 
+function commitChanges() {
+    SendRequestSaveToFlash();
+    LockControls(true);
+}
+
 function Update() {
 
     if (typeof serial == 'undefined') {} else {
@@ -303,7 +308,8 @@ function PopulatePinModeList() {
     comboPinMode = document.getElementById("inputPinMode");
     ClearOptions(comboPinMode);
     for (var i = 0; i < pinModeList.length; i++) {
-        AddNewOption(comboPinMode, pinModeList[i], pinModeInt[i]);
+        AddNewOption(comboPinMode, pinModeList[i], device.GetPinModeInt(i));
+        console.log(i + " : " + pinModeList[i] + " : " + device.GetPinModeInt(i));
     }
     //comboPinMode.value = pinModeList[0];
 }
@@ -837,7 +843,7 @@ function ParseResponse(response) {
         console.log("Device Input Update Confirmation Received");
         if (response[2] == 111 && response[3] == 107) {
             console.log("OK");
-            SendRequestSaveToFlash();
+            //SendRequestSaveToFlash();
         }
         serialWaitingOn = 0;
     } else if (response[0] == INCOMING_RESPONSE_DELETE_INPUT_UPDATE) {
@@ -845,7 +851,7 @@ function ParseResponse(response) {
         console.log("Device Input Delete Confirmation Received");
         if (response[2] == 111 && response[3] == 107) {
             console.log("OK");
-            SendRequestSaveToFlash();
+            //SendRequestSaveToFlash();
         }
     } else if (response[0] == INCOMING_RESPONSE_SAVE_TO_FLASH) {
         console.log("Saved to flash confirmed");
@@ -857,6 +863,14 @@ function ParseResponse(response) {
 
 
 function LockControls(lock) {
+    if (lock) {
+
+        document.getElementById("loadingSpinner").hidden = false;
+    } else {
+
+        document.getElementById("loadingSpinner").hidden = true;
+    }
+
     // Input selector
     document.getElementById("comboAllInputs").disabled = lock;
 

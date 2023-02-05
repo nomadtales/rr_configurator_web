@@ -45,10 +45,13 @@
                     </div>
                     </br>
                     <div class="row">
-                        <div class="col-sm-10">
+                        <div class="col-sm-6">
 
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
+                            <button type="submit" onclick="window.open('./configuratorFiles/rr_controller_rp2040.ino.uf2')">Download RP2040 (Pi Pico) Firmware</button>
+                        </div>
+                        <div class="col-sm-3">
                             <esp-web-install-button manifest="./configuratorFiles/esp32.json">
                                 <button slot="activate">Upload Firmware to ESP32</button>
                                 <span slot="unsupported">Cannot use serial with this browser!</span>
@@ -100,13 +103,19 @@
                                 <option value="4">39&ensp;&ensp;HAT 1 NE</option>
                             </select>
                         </div>
-                        <div class="col-sm-7">
+                        <div class="col-sm-4">
                             <button id="buttonAddInput" onclick="onAddInput()" class="btn btn-primary" type="button">
                                 Add Input
                             </button>
 
-                            <button id="buttonMacros" onclick="onOpenMacroPage()" class="btn btn-primary" type="button">
+                            <!-- <button id="buttonMacros" onclick="onOpenMacroPage()" class="btn btn-primary" type="button">
                                 Macros
+                            </button> -->
+                        </div>
+
+                        <div class="dropdown col-sm-3">
+                            <button id="buttonCommit" class="btn btn-warning" onclick="commitChanges()" type="button">
+                                Commit Changes
                             </button>
                         </div>
 
@@ -116,9 +125,21 @@
                             </button>
                         </div>
                     </div>
+                    </br>
+                    <div id="loadingSpinner" class="row" hidden>
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-center">
+
+                                <div class="spinner-grow" role="status">
+                                    <span class="sr-only"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                </br>
+
                 </br>
                 </br>
 
@@ -289,13 +310,21 @@
                 <div id="pageInstructions" class="container">
                     <div>
                         <h4>Compatible Devices:</h4>
-                        <p>ESP32</p>
+                        <p><b>ESP32</b></p>
+                        <p><b>Raspberry Pi Pico (RP2040)</b><small></br>Currently inputs are limited to X, Y, Z, and ZRotate axes only, 1 hat, 32 buttons.</small></p>
+
                         <h4>Instructions:</h4>
+                        <h5>ESP32</h5>
                         <p>Connect ESP32 to PC via USB, click the "Upload Firmware to ESP32" to flash the firmware
                         </p>
+                        <p>Any time firmware is flashed it is recommended to unpair/pair the device again using your operating systems bluetooth console.</p>
+                        <h5>RP2040 / Pi Pico</h5>
+                        <p>Plug your Pico in while holding the BOOTSEL button, drag the downloaded .UF2 file into the RPI-RP2 drive that appears.
+                        </p>
+                        </br>
                         <p>After firmware is flashed you can press "Connect" to open the configurator and set up your input configuration.
                         </p>
-                        <p>Any time firmware is flashed it is recommended to unpair/pair the device again using your operating systems bluetooth console.</p>
+
                         <p>Test inputs using the online <a href="https://gamepad-tester.com/">Gamepad Tester</a></p>
                         <p>Please report any bugs or suggestions on the RealRobots <a href="https://discord.gg/qXGwBBZmQy">Discord</a></p>
                         <p>Code available on <a href="https://gitlab.com/realrobots/rr_configurator_web">GitLab</a>.

@@ -22,7 +22,23 @@ function GetDeviceTarget(microcontrollerIdx) {
 const targetESP32 = {
     index: 0,
     microcontrollerName: "ESP32",
-    pins: []
+    pins: [],
+    INPUT: 1,
+    INPUT_PULLUP: 5,
+    INPUT_PULLDOWN: 9,
+    OUTPUT: 3,
+    PWM_MAX: 4095
+};
+
+const targetRP2040 = {
+    index: 3,
+    microcontrollerName: "RP2040",
+    pins: [],
+    INPUT: 0,
+    INPUT_PULLUP: 2,
+    INPUT_PULLDOWN: 3,
+    OUTPUT: 1,
+    PWM_MAX: 1023
 };
 
 targetESP32.pins.push(new Pin(0, 0, 0, "Flashing Enable Pin, must be LOW to enter flashing mode"));
@@ -58,7 +74,17 @@ targetESP32.pins.push(new Pin(35, 1, 0, "Input only"))
 targetESP32.pins.push(new Pin(36, 1, 0, "Input only"))
 targetESP32.pins.push(new Pin(39, 1, 0, "Input only"))
 
-const MICROCONTROLLERS = [targetESP32];
+for (var i = 0; i < 22; i++) {
+    targetRP2040.pins.push(new Pin(i, 1, 1))
+}
+targetRP2040.pins.push(new Pin(26, 1, 1))
+targetRP2040.pins.push(new Pin(27, 1, 1))
+targetRP2040.pins.push(new Pin(28, 1, 1))
+
+
+
+const MICROCONTROLLERS = [targetESP32, targetRP2040];
+
 
 
 DIGITAL = 0
@@ -71,22 +97,23 @@ INPUT_PULLUP = 5
 INPUT_PULLDOWN = 9
 OUTPUT = 3
 
-function GetPinMode(esp32val) {
-    if (esp32val == INPUT) {
-        return pinModes[0];
-    } else if (esp32val == INPUT_PULLUP) {
-        return pinModes[1];
-    } else if (esp32val == INPUT_PULLDOWN) {
-        return pinModes[2];
-    } else if (esp32val == OUTPUT) {
-        return pinModes[3];
-    } else {
-        return "UNKNOWN";
-    }
-}
+// function GetPinMode(esp32val) {
+//     if (esp32val == INPUT) {
+//         return pinModes[0];
+//     } else if (esp32val == INPUT_PULLUP) {
+//         return pinModes[1];
+//     } else if (esp32val == INPUT_PULLDOWN) {
+//         return pinModes[2];
+//     } else if (esp32val == OUTPUT) {
+//         return pinModes[3];
+//     } else {
+//         return "UNKNOWN";
+//     }
+// }
 
 const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"];
 const pinModeInt = [INPUT, INPUT_PULLUP, INPUT_PULLDOWN, OUTPUT];
+
 
 // HID Input Types
 GAMEPAD_BUTTON = 1 // 1-128
