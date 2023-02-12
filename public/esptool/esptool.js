@@ -1,27 +1,28 @@
-const baudrates = document.getElementById('baudrates');
-const connectButton = document.getElementById('connectButton');
-const disconnectButton = document.getElementById('disconnectButton');
-const resetButton = document.getElementById('resetButton');
-const consoleStartButton = document.getElementById('consoleStartButton');
-const consoleStopButton = document.getElementById('consoleStopButton');
-const eraseButton = document.getElementById('eraseButton');
-const programButton = document.getElementById('programButton');
-const filesDiv = document.getElementById('files');
-const terminal = document.getElementById('terminal');
-const programDiv = document.getElementById('program');
-const consoleDiv = document.getElementById('console');
-const lblBaudrate = document.getElementById('lblBaudrate');
-const lblConnTo = document.getElementById('lblConnTo');
-const table = document.getElementById('fileTable');
-const alertDiv = document.getElementById('alertDiv');
+// const baudrates = document.getElementById('baudrates');
+// const connectButton = document.getElementById('connectButton');
+// const disconnectButton = document.getElementById('disconnectButton');
+// const resetButton = document.getElementById('resetButton');
+// const consoleStartButton = document.getElementById('consoleStartButton');
+// const consoleStopButton = document.getElementById('consoleStopButton');
+// const eraseButton = document.getElementById('eraseButton');
+// const programButton = document.getElementById('programButton');
+// const filesDiv = document.getElementById('files');
+// const terminal = document.getElementById('terminal');
+// const programDiv = document.getElementById('program');
+// const consoleDiv = document.getElementById('console');
+// const lblBaudrate = document.getElementById('lblBaudrate');
+// const lblConnTo = document.getElementById('lblConnTo');
+// const table = document.getElementById('fileTable');
+// const alertDiv = document.getElementById('alertDiv');
+const uploadButton = document.getElementById('upload_esptool');
 
 // import { Transport } from './cp210x-webusb.js'
 import * as esptooljs from "./bundle.js";
 const ESPLoader = esptooljs.ESPLoader;
 const Transport = esptooljs.Transport;
 
-let term = new Terminal({ cols: 120, rows: 40 });
-term.open(terminal);
+// let term = new Terminal({ cols: 120, rows: 40 });
+// term.open(terminal);
 
 let device = null;
 let transport;
@@ -30,10 +31,10 @@ let esploader;
 let file1 = null;
 let connected = false;
 
-disconnectButton.style.display = 'none';
-eraseButton.style.display = 'none';
-consoleStopButton.style.display = 'none';
-filesDiv.style.display = 'none';
+// disconnectButton.style.display = 'none';
+// eraseButton.style.display = 'none';
+// consoleStopButton.style.display = 'none';
+// filesDiv.style.display = 'none';
 
 
 function handleFileSelect(evt) {
@@ -75,17 +76,22 @@ function convert(input) {
     console.log(output)
 }
 
-connectButton.onclick = async() => {
+uploadButton.onclick = async() => {
 
+
+    await ESPTOOL_UPLOAD();
+}
+
+async function ESPTOOL_UPLOAD() {
 
 
     if (device === null) {
         device = await navigator.serial.requestPort({});
         transport = new Transport(device);
     }
-
+    SetErrorText("Connecting...");
     try {
-        esploader = new ESPLoader(transport, baudrates.value, espLoaderTerminal);
+        esploader = new ESPLoader(transport, 921600, undefined);
         connected = true;
 
         chip = await esploader.main_fn();
@@ -98,22 +104,18 @@ connectButton.onclick = async() => {
     }
 
     console.log('Settings done for :' + chip);
-    lblBaudrate.style.display = 'none';
-    lblConnTo.innerHTML = 'Connected to device: ' + chip;
-    lblConnTo.style.display = 'block';
-    //baudrates.style.display = 'none';
-    connectButton.style.display = 'none';
-    //disconnectButton.style.display = 'initial';
-    //eraseButton.style.display = 'initial';
-    //filesDiv.style.display = 'initial';
-    consoleDiv.style.display = 'none';
+    // lblBaudrate.style.display = 'none';
+    // lblConnTo.innerHTML = 'Connected to device: ' + chip;
+    // lblConnTo.style.display = 'block';
+    // connectButton.style.display = 'none';
+    // consoleDiv.style.display = 'none';
 
 
 
     var reader = new FileReader();
     const file = "";
 
-    const response = await fetch("./rr_controller_esp32.bin");
+    const response = await fetch("./esptool/rr_controller_esp32.bin");
     const content = await response.blob();
     //console.log(content);
     //console.log(1);
@@ -160,15 +162,19 @@ async function UploadFile(fileData) {
             false,
             true,
             (fileIndex, written, total) => {
+                //console.log((written / total) * 100);
+                SetErrorText("Upload " + Math.round((written / total) * 100) + "% complete");
                 //progressBars[fileIndex].value = (written / total) * 100;
             },
             (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
         );
+        SetErrorText("");
         await Disconnect();
     } catch (e) {
         console.error(e);
         term.writeln(`Error: ${e.message}`);
     } finally {
+        SetErrorText("Upload Successful");
         // Hide progress bars and show erase buttons
         // for (let index = 1; index < table.rows.length; index++) {
         //     table.rows[index].cells[2].style.display = 'none';
@@ -178,7 +184,8 @@ async function UploadFile(fileData) {
     }
 }
 
-resetButton.onclick = async() => {
+//resetButton.onclick = async() => {
+async function OnClickReset() {
     if (device === null) {
         device = await navigator.serial.requestPort({});
         transport = new Transport(device);
@@ -189,7 +196,8 @@ resetButton.onclick = async() => {
     await transport.setDTR(true);
 };
 
-eraseButton.onclick = async() => {
+//eraseButton.onclick = async() => {
+async function OnClickErase() {
     eraseButton.disabled = true;
     try {
         await esploader.erase_flash();
@@ -201,7 +209,8 @@ eraseButton.onclick = async() => {
     }
 };
 
-addFile.onclick = () => {
+//addFile.onclick = () => {
+function AddFile() {
     var rowCount = table.rows.length;
     var row = table.insertRow(rowCount);
 
@@ -257,28 +266,29 @@ function cleanUp() {
     chip = null;
 }
 
-disconnectButton.onclick = async() => {
-    await Disconnect();
-};
+// disconnectButton.onclick = async() => {
+//     await Disconnect();
+// };
 
 async function Disconnect() {
     if (transport) await transport.disconnect();
 
     //term.clear();
-    connected = false;
+    //connected = false;
     //baudrates.style.display = 'initial';
-    connectButton.style.display = 'initial';
-    disconnectButton.style.display = 'none';
-    eraseButton.style.display = 'none';
-    lblConnTo.style.display = 'none';
-    filesDiv.style.display = 'none';
-    alertDiv.style.display = 'none';
-    consoleDiv.style.display = 'initial';
-    cleanUp();
+    // connectButton.style.display = 'initial';
+    // disconnectButton.style.display = 'none';
+    // eraseButton.style.display = 'none';
+    // lblConnTo.style.display = 'none';
+    // filesDiv.style.display = 'none';
+    // alertDiv.style.display = 'none';
+    // consoleDiv.style.display = 'initial';
+    // cleanUp();
 }
 
 let isConsoleClosed = false;
-consoleStartButton.onclick = async() => {
+//consoleStartButton.onclick = async() => {
+async function StartConsole() {
     if (device === null) {
         device = await navigator.serial.requestPort({});
         transport = new Transport(device);
@@ -302,7 +312,8 @@ consoleStartButton.onclick = async() => {
     console.log('quitting console');
 };
 
-consoleStopButton.onclick = async() => {
+//consoleStopButton.onclick = async() => {
+async function StopConsole() {
     isConsoleClosed = true;
     await transport.disconnect();
     await transport.waitForUnlock(1500);
@@ -340,7 +351,8 @@ function validate_program_inputs() {
     return 'success';
 }
 
-programButton.onclick = async() => {
+//programButton.onclick = async() => {
+async function ProgramButton() {
     const alertMsg = document.getElementById('alertmsg');
     const err = validate_program_inputs();
 
@@ -417,4 +429,4 @@ programButton.onclick = async() => {
     }
 };
 
-addFile.onclick();
+//addFile.onclick();

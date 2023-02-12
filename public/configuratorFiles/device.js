@@ -24,6 +24,10 @@ class Device {
         return this.inputCount == this.inputsLoaded;
     }
 
+    AllMacrosLoaded() {
+        return this.macroCount == this.macrosLoaded;
+    }
+
     GetBlueprintInputList() {
         if (this.deviceBlueprint == null) {
             console.log("blueprint not assigned yet");
@@ -60,6 +64,10 @@ class Device {
         this.firmwareVersion = data[2];
         this.inputCount = data[3];
 
+        // Can remove this check later, data length of 6 means macro count wasn't put in yet
+        if (data.length != 6) {
+            this.macroCount = data[4];
+        }
         console.log(this);
     }
 
@@ -114,24 +122,48 @@ class Device {
         }
     }
 
-    AddMacroFromConfig(data, startAddress) {
+    convert(num) {
+        return num
+            .toString() // convert number to string
+            .split('') // convert string to array of characters
+            .map(Number) // parse characters as numbers
+            .map(n => (n || 10) + 64) // convert to char code, correcting for J
+            .map(c => String.fromCharCode(c)) // convert char codes to strings
+            .join(''); // join values together
+    }
+
+    AddMacroFromConfig(data) {
+        this.macrosLoaded += 1;
+
         var newMacro = new Macro();
         this.macros.push(newMacro)
 
-        var nameArray = data.slice(startAddress, startAddress + 16);
-        var macroName = new TextDecoder().decode(nameArray);
+        var nameLocation = 2;
+        var nameArray = data.slice(nameLocation, nameLocation + 16);
+        var nameString = "";
+        for (var i = 0; i < 16; i++) {
+            if (nameArray[i] == '0') {
+                break;
+            }
+            nameString += String.fromCharCode(nameArray[i]);
+        }
+        console.log("Macro Name: " + nameString);
+        newMacro.SetMacroName(nameString);
 
-        var bindingCount = data[startAddress + 16];
+        var bindingCountLocation = 18;
+        var bindingCount = data[bindingCountLocation];
+        console.log("binding count: " + bindingCount);
 
-
+        var startAddress = bindingCountLocation + 1;
+        let newBinding;
         for (var b = 0; b < bindingCount; b++) {
-            var newBinding = new Binding();
-            newMacro.AddBinding(newBinding);
+            newBinding = new Binding();
 
-            var start = startAddress + 17 + (7 * b);
+            var start = startAddress + (7 * b);
             var end = start + 7;
             var snippedData = data.slice(start, end)
             newBinding.SetFromConfigPacket(snippedData)
+            newMacro.AddBinding(newBinding);
         }
 
 
@@ -297,16 +329,16 @@ class Macro {
         this.macroName = "New Macro";
         this.bindings = []
 
-        this.AddBinding();
+        //this.AddBinding();
     }
 
     SetMacroName(newName) {
         this.macroName = newName;
     }
 
-    AddBinding() {
-        var newBinding = new Binding();
-        this.bindings.push(newBinding);
+    AddBinding(binding) {
+        //var newBinding = new Binding();
+        this.bindings.push(binding);
     }
 
     GetBinding(idx) {
@@ -342,15 +374,14 @@ class Binding {
     }
 
     SetFromConfigPacket(data) {
-        console.log(data);
-        this.deviceType = data[13]
-        this.inputType = data[14]
-            //console.log("INPUT TYPE: " + this.inputType);
-        this.assignedInput = data[15]
-        this.value = data[16] << 8
-        this.value += data[17]
-        this.state = data[18]
-        this.trigger = data[19]
+        //console.log(data);
+        this.deviceType = data[0]
+        this.inputType = data[1]
+        this.assignedInput = data[2];
+        this.value = data[3] << 8
+        this.value = data[4];
+        this.state = data[5];
+        this.trigger = data[6];
     }
 
     ToIntArray() {

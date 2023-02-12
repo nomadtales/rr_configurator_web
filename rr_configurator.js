@@ -9,7 +9,7 @@ app.get('/', (req, res) => {
 })
 
 app.get('/esptool', (req, res) => {
-    res.sendFile(__dirname + "/public/esptool/" + "index.html");
+    res.sendFile(__dirname + "/public/esptool/" + "esptool.html");
 })
 
 

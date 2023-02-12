@@ -219,7 +219,7 @@ function PopulateDeviceInputSelector() {
         // assignmentList = GetAssignmentList(bindingType);
         //console.log("len: " + inputList.length);
     for (var i = 0; i < inputList.length; i++) {
-        console.log("i:" + i);
+        //console.log("i:" + i);
         bindingType = device.GetInput(i).GetBindingType();
 
         pin = inputList[i].GetPin();
@@ -311,7 +311,7 @@ function PopulatePinModeList() {
     ClearOptions(comboPinMode);
     for (var i = 0; i < pinModeList.length; i++) {
         AddNewOption(comboPinMode, pinModeList[i], device.GetPinModeInt(i));
-        console.log(i + " : " + pinModeList[i] + " : " + device.GetPinModeInt(i));
+        //console.log(i + " : " + pinModeList[i] + " : " + device.GetPinModeInt(i));
     }
     //comboPinMode.value = pinModeList[0];
 }
@@ -663,6 +663,13 @@ function SendInputConfigRequest(idx) {
     SendRequest(request, INCOMING_INPUT_CONFIG_RESPONSE);
 }
 
+function SendMacroConfigRequest(idx) {
+    console.log("Sending macro config request " + idx);
+    request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_REQUEST_MACRO_CONFIG, idx, 13, 10]);
+
+    SendRequest(request, INCOMING_RESPONSE_MACRO_CONFIG);
+}
+
 function SendDeleteInputRequest(index) {
     request = []
     request.push(OUTGOING_REQUEST_HEADER);
@@ -727,6 +734,13 @@ function ParseInputConfigResponse(response) {
     var inputIdx = response[1];
     console.log("received input: " + inputIdx);
     device.AddInput(response.slice(2, 20 + 2));
+}
+
+function ParseMacroConfigResponse(response) {
+    var macroIdx = response[1];
+    console.log("received macro: " + macroIdx);
+    console.log(response);
+    device.AddMacroFromConfig(response);
 }
 
 function ParseInputConfigResponseAll(response) {
@@ -818,10 +832,25 @@ function ParseResponse(response) {
         if (!device.AllInputsLoaded()) {
             SendInputConfigRequest(device.inputsLoaded);
         } else {
-            LockControls(false);
+            if (!device.AllMacrosLoaded()) {
+                SendMacroConfigRequest(device.macrosLoaded);
+            } else {
+                LockControls(false);
+            }
         }
 
-
+    } else if (response[0] == INCOMING_RESPONSE_MACRO_CONFIG) {
+        console.log("Device Macro Config Received");
+        serialWaitingOn = 0;
+        ParseMacroConfigResponse(response);
+        if (!device.AllMacrosLoaded()) {
+            SendMacroConfigRequest(device.macrosLoaded);
+        } else {
+            console.log("Received All Input Configs");
+            console.log(device);
+            InitializeInputControls();
+            LockControls(false);
+        }
     } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE) {
         console.log("Device Input Config Received");
         serialWaitingOn = 0;
@@ -829,9 +858,13 @@ function ParseResponse(response) {
         if (!device.AllInputsLoaded()) {
             SendInputConfigRequest(device.inputsLoaded);
         } else {
-            console.log("Received All Input Configs");
-            InitializeInputControls();
-            LockControls(false);
+            if (!device.AllMacrosLoaded()) {
+                SendMacroConfigRequest(device.macrosLoaded);
+            } else {
+                console.log("Received All Input Configs");
+                InitializeInputControls();
+                LockControls(false);
+            }
         }
 
     } else if (response[0] == INCOMING_INPUT_CONFIG_RESPONSE_ALL) {
