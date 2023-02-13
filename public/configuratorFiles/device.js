@@ -336,6 +336,10 @@ class Macro {
         this.macroName = newName;
     }
 
+    GetMacroName() {
+        return this.macroName;
+    }
+
     AddBinding(binding) {
         //var newBinding = new Binding();
         this.bindings.push(binding);
@@ -343,6 +347,10 @@ class Macro {
 
     GetBinding(idx) {
         return this.bindings[idx];
+    }
+
+    GetBindings() {
+        return this.bindings;
     }
 }
 
@@ -355,6 +363,14 @@ class Binding {
         this.value = 0;
         this.state = 0; //constant.BUTTON_UP
         this.trigger = 4;
+    }
+
+    GetDeviceType() {
+        return this.deviceType;
+    }
+
+    SetDeviceType(deviceType) {
+        this.deviceType = deviceType;
     }
 
     GetBindingType() {
@@ -382,6 +398,22 @@ class Binding {
         this.value = data[4];
         this.state = data[5];
         this.trigger = data[6];
+    }
+
+    SetValue(value) {
+        this.value = value;
+    }
+
+    GetValue() {
+        return this.value;
+    }
+
+    SetState(state) {
+        this.state = state;
+    }
+
+    GetState() {
+        return this.state;
     }
 
     ToIntArray() {

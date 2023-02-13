@@ -43,6 +43,17 @@ const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 const OUTGOING_REQUEST_MACRO_CONFIG = 114;
 const INCOMING_RESPONSE_MACRO_CONFIG = 115;
 
+let macroBindingRowsHolder;
+let macroBindingRowPrototype;
+
+window.onload = function() {
+    // Store macro rows for instantiating later.
+    macroBindingRowsHolder = document.getElementById("macroBindingRows");
+    macroBindingRowPrototype = document.getElementById("macroBindingRows").querySelector('.bindingRow');
+    macroBindingRowPrototype.remove();
+
+};
+
 function CodeToString(code) {
     switch (code) {
         case INCOMING_HANDSHAKE_RESPONSE:
@@ -170,6 +181,26 @@ function SetErrorText(text) {
 
 function Test() {}
 
+function AddMacroBindingRow(idx) {
+    var row = macroBindingRowPrototype.cloneNode(true);
+    row.setAttribute("idx", idx);
+    macroBindingRowsHolder.appendChild(row);
+    return row;
+}
+
+function ClearMacroBindingRows() {
+    let rowToDelete = document.getElementById("macroBindingRows").querySelector('.bindingRow');
+    while (rowToDelete != null) {
+        rowToDelete.remove();
+        rowToDelete = document.getElementById("macroBindingRows").querySelector('.bindingRow');
+    }
+}
+
+function onComboMacroInputChange(id) {
+    macroBindingIdx = id.parentElement.parentElement.getAttribute("idx");
+    console.log(macroBindingIdx);
+}
+
 function UpdateInputValues(inputIdx, raw, calibrated) {
     if (inputIdx == selectedInputIndex) {
         document.getElementById("labelRawValue").innerText = raw;
@@ -191,6 +222,7 @@ function UpdateInputValues(inputIdx, raw, calibrated) {
 
 function InitializeInputControls() {
     PopulateDeviceInputSelector();
+    PopulateDeviceMacroSelector();
 
     PopulatePinList();
     PopulatePinModeList();
@@ -200,6 +232,10 @@ function InitializeInputControls() {
     if (device.inputs.length > 0) {
         SetInputControlsFromDevice(0);
     }
+
+
+
+
     document.getElementById("comboAllInputs").value = 0;
 }
 
@@ -238,6 +274,28 @@ function PopulateDeviceInputSelector() {
     }
     selector.value = selectedInputIndex;
 }
+
+function PopulateDeviceMacroSelector() {
+    macroList = device.macros;
+
+    // if (inputList.length > 0) {
+    //     document.getElementById("pageInput").hidden = false;
+    // } else {
+    //     document.getElementById("pageInput").hidden = true;
+    // }
+
+    selector = document.getElementById("comboAllMacros");
+    ClearOptions(selector);
+
+    for (var i = 0; i < macroList.length; i++) {
+        AddNewOption(selector,
+            i + " " +
+            macroList[i].macroName, i);
+    }
+    selector.value = 0;
+}
+
+
 
 function SetDeviceDescriptionFromDevice() {
     document.getElementById("labelDeviceName").innerText =
@@ -288,6 +346,36 @@ function SetInputControlsFromDevice(idx) {
     document.getElementById("inputFilterSize").value =
         device.GetInput(idx).GetBufferSize();
 
+}
+
+function SetMacroControlsFromDevice(idx) {
+    console.log(idx);
+    macro = device.GetMacro(idx);
+    bindings = macro.GetBindings();
+
+    document.querySelector('#inputMacroName').value = macro.GetMacroName();
+
+    ClearMacroBindingRows();
+    for (var i = 0; i < bindings.length; i++) {
+        var row = AddMacroBindingRow(i);
+        var comboDeviceType = row.querySelector("#comboMacroDeviceType");
+        comboDeviceType.value = bindings[i].GetDeviceType();
+
+        var comboInputType = row.querySelector("#comboMacroInputType");
+        comboInputType.value = bindings[i].GetBindingType();
+
+        var comboAssignedInput = row.querySelector("#comboMacroAssignment");
+        ClearOptions(comboAssignedInput);
+        options = GetAssignmentList(comboInputType.value);
+        for (var o = 0; o < options.length; o++) {
+            AddNewOption(comboAssignedInput, options[o], o);
+        }
+        comboAssignedInput.value = bindings[i].GetAssignedInput();
+        console.log(bindings[i].GetAssignedInput())
+
+        row.querySelector("#comboMacroValue").value = bindings[i].GetValue();
+    }
+    console.log(macro);
 }
 
 function SetComboBoxValue(comboBox, value) {
@@ -478,6 +566,13 @@ function onSelectedInputChange() {
     SetInputControlsFromDevice(selectedInputIndex);
     document.getElementById("pageInput").hidden = false;
     document.getElementById("pageMacros").hidden = true;
+}
+
+function onSelectedMacroChange() {
+    selectedInputIndex = document.getElementById("comboAllMacros").value;
+    SetMacroControlsFromDevice(selectedInputIndex);
+    // document.getElementById("pageInput").hidden = false;
+    // document.getElementById("pageMacros").hidden = true;
 }
 
 function onAddInput() {

@@ -108,9 +108,9 @@
                                 Add Input
                             </button>
 
-                            <!-- <button id="buttonMacros" onclick="onOpenMacroPage()" class="btn btn-primary" type="button">
+                            <button id="buttonMacros" onclick="onOpenMacroPage()" class="btn btn-primary" type="button">
                                 Macros
-                            </button> -->
+                            </button>
                         </div>
 
                         <div class="dropdown col-sm-3">
@@ -144,7 +144,7 @@
                 </br>
                 </br>
 
-                <div id="pageMacros" class="container" hidden>
+                <div id="pageMacros" class="container">
 
                     <div class="row text-center ">
                         <h3>Macro Management</h3>
@@ -160,9 +160,75 @@
                                 <option value="4">39&ensp;&ensp;HAT 1 NE</option>
                             </select>
                         </div>
+                        <div class="dropdown col-sm-3">
+                            <button id="buttonAddInput" onclick="onAddMacro()" class="btn btn-primary" type="button">
+                                Add Macro
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <h4>Macro Name</h4>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="dropdown col-sm-3">
+                            <input id="inputMacroName" class="form-control" type="text" placeholder="New Macro" maxlength="16" onkeydown="return /[a-z\-]/i.test(event.key)">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <h4>Bindings</h4>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <h4>Device Type</h4>
+                        </div>
+                        <div class="col-sm-3">
+                            <h4>Input Type</h4>
+                        </div>
+                        <div class="col-sm-3">
+                            <h4>Input</h4>
+                        </div>
+                        <div class="col-sm-2">
+                            <h4>Value</h4>
+                        </div>
+                        <div class="col-sm-1">
+                        </div>
+                    </div>
+                    <div id="macroBindingRows">
+                        <div class="row bindingRow">
+                            <div class="col-sm-3">
+                                <select id="comboMacroDeviceType" onchange="onComboMacroDeviceChange()" class="form-select" aria-label="Default select example">
+                                    <option value="1">GAMEPAD</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-3">
+                                <select id="comboMacroInputType" onchange="onComboMacroInputChange(this)" class="form-select" aria-label="Default select example">
+                                    <option value="1">BUTTON</option>
+                                    <option value="2">AXIS</option>
+                                    <option value="3">HAT</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-3">
+                                <select id="comboMacroAssignment" onchange="onComboMacroAssignmentChange()" class="form-select" aria-label="Default select example">
+
+                                </select>
+                            </div>
+                            <div class="col-sm-2">
+                                <input id="comboMacroValue" class="form-control" type="text" placeholder="0" maxlength="16" onkeydown="return /[a-z\-]/i.test(event.key)">
+                            </div>
+                            <div class="col-sm-1">
+                                <div class="float-end ">
+                                    <button class="btn btn-sm btn-danger float-end " type="button ">
+                                        X
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
 
                 <div id="pageInput" class="container" hidden>
 
