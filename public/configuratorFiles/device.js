@@ -78,6 +78,7 @@ class Device {
     AddNewMacro() {
         var newMacro = new Macro();
         this.macros.push(newMacro);
+        newMacro.AddBindingDefault();
     }
 
     GetMacro(idx) {
@@ -91,6 +92,7 @@ class Device {
 
     AddInput(data) {
         console.log("input: " + data);
+        console.log(data);
         var newInput = new DeviceInput(this.deviceBlueprint.PWM_MAX);
         newInput.SetFromConfigPacket(data);
         this.inputs.push(newInput);
@@ -122,15 +124,15 @@ class Device {
         }
     }
 
-    convert(num) {
-        return num
-            .toString() // convert number to string
-            .split('') // convert string to array of characters
-            .map(Number) // parse characters as numbers
-            .map(n => (n || 10) + 64) // convert to char code, correcting for J
-            .map(c => String.fromCharCode(c)) // convert char codes to strings
-            .join(''); // join values together
-    }
+    // convert(num) {
+    //     return num
+    //         .toString() // convert number to string
+    //         .split('') // convert string to array of characters
+    //         .map(Number) // parse characters as numbers
+    //         .map(n => (n || 10) + 64) // convert to char code, correcting for J
+    //         .map(c => String.fromCharCode(c)) // convert char codes to strings
+    //         .join(''); // join values together
+    // }
 
     AddMacroFromConfig(data) {
         this.macrosLoaded += 1;
@@ -291,6 +293,8 @@ class DeviceInput {
         this.deadZone += data[11]
         this.bufferSize = data[12]
 
+        data = data.slice(13);
+        console.log(data);
         this.binding.SetFromConfigPacket(data);
     }
 
@@ -326,13 +330,23 @@ class DeviceInput {
 
 class Macro {
     constructor() {
-        this.macroName = "New Macro";
+        this.macroName = "New Macrow";
         this.bindings = []
 
         //this.AddBinding();
     }
 
     SetMacroName(newName) {
+        if (newName.length > 16) {
+            newName = newName.slice(15);
+        } else if (newName.length < 16) {
+            while (newName.length < 16) {
+                newName = newName + " ";
+                //console.log(newName);
+            }
+        }
+        console.log(newName + ": " + newName.length);
+
         this.macroName = newName;
     }
 
@@ -343,6 +357,10 @@ class Macro {
     AddBinding(binding) {
         //var newBinding = new Binding();
         this.bindings.push(binding);
+    }
+
+    AddBindingDefault() {
+        this.bindings.push(new Binding());
     }
 
     GetBinding(idx) {
@@ -389,6 +407,14 @@ class Binding {
         this.assignedInput = val;
     }
 
+    GetValue() {
+        return this.value;
+    }
+
+    SetValue(val) {
+        this.value = val;
+    }
+
     SetFromConfigPacket(data) {
         //console.log(data);
         this.deviceType = data[0]
@@ -421,8 +447,11 @@ class Binding {
         bytes.push(this.deviceType);
         bytes.push(this.inputType);
         bytes.push(this.assignedInput);
+        bytes.push((this.value >> 8));
+        bytes.push(this.value & 0xff);
         bytes.push(this.state);
         bytes.push(this.trigger);
+        console.log(bytes);
         return bytes
     }
 }

@@ -43,6 +43,15 @@ const INCOMING_RESPONSE_SAVE_TO_FLASH = 113
 const OUTGOING_REQUEST_MACRO_CONFIG = 114;
 const INCOMING_RESPONSE_MACRO_CONFIG = 115;
 
+const OUTGOING_REQUEST_MACRO_BINDING_UPDATE = 116;
+const INCOMING_RESPONSE_MACRO_BINDING_UPDATE = 117;
+
+const OUTGOING_REQUEST_MACRO_NAME_UPDATE = 118;
+const INCOMING_RESPONSE_MACRO_NAME_UPDATE = 119;
+
+const OUTGOING_REQUEST_MACRO_CONFIG_UPDATE = 120;
+const INCOMING_RESPONSE_MACRO_CONFIG_UPDATE = 121;
+
 let macroBindingRowsHolder;
 let macroBindingRowPrototype;
 
@@ -74,6 +83,14 @@ function CodeToString(code) {
             return "INCOMING_RESPONSE_SAVE_TO_FLASH";
         case INCOMING_RESPONSE_MACRO_CONFIG:
             return "INCOMING_RESPONSE_MACRO_CONFIG";
+        case INCOMING_RESPONSE_MACRO_CONFIG_UPDATE:
+            return "INCOMING_RESPONSE_MACRO_CONFIG_UPDATE";
+        case INCOMING_RESPONSE_MACRO_NAME_UPDATE:
+            return "INCOMING_RESPONSE_MACRO_NAME_UPDATE";
+
+
+
+
 
         default:
             return "UNKNOWN HEADER";
@@ -239,14 +256,21 @@ function InitializeInputControls() {
     document.getElementById("comboAllInputs").value = 0;
 }
 
+
 function PopulateDeviceInputSelector() {
     inputList = device.inputs;
 
     if (inputList.length > 0) {
-        document.getElementById("pageInput").hidden = false;
+        document.getElementById("currentInputControl").hidden = false;
     } else {
-        document.getElementById("pageInput").hidden = true;
+        document.getElementById("currentInputControl").hidden = true;
     }
+
+    // if (inputList.length > 0) {
+    //     document.getElementById("pageInput").hidden = false;
+    // } else {
+    //     document.getElementById("pageInput").hidden = true;
+    // }
 
     selector = document.getElementById("comboAllInputs");
     ClearOptions(selector);
@@ -353,7 +377,7 @@ function SetMacroControlsFromDevice(idx) {
     macro = device.GetMacro(idx);
     bindings = macro.GetBindings();
 
-    document.querySelector('#inputMacroName').value = macro.GetMacroName();
+    document.querySelector('#inputMacroName').value = macro.GetMacroName().trim();
 
     ClearMacroBindingRows();
     for (var i = 0; i < bindings.length; i++) {
@@ -371,12 +395,88 @@ function SetMacroControlsFromDevice(idx) {
             AddNewOption(comboAssignedInput, options[o], o);
         }
         comboAssignedInput.value = bindings[i].GetAssignedInput();
-        console.log(bindings[i].GetAssignedInput())
+        //console.log(bindings[i].GetAssignedInput())
 
         row.querySelector("#comboMacroValue").value = bindings[i].GetValue();
     }
     console.log(macro);
 }
+
+function onMacroNameChange(textBox) {
+    console.log(textBox.value);
+    newMacroName = textBox.value;
+
+    selectedMacroIdx = document.getElementById("comboAllMacros").value;
+    device.GetMacro(selectedMacroIdx).SetMacroName(newMacroName);
+
+    SendMacroNameUpdate(selectedMacroIdx);
+}
+
+// TODO: Alternate device types not implement yet (keyboard/mouse etc)
+function onComboMacroDeviceChange(comboBox) {}
+
+function onComboMacroInputChange(comboBox) {
+    newInputTypeIdx = comboBox.value
+    bindingIdx = comboBox.parentElement.parentElement.getAttribute("idx");
+    selectedMacroIdx = document.getElementById("comboAllMacros").value;
+    selectedMacro = device.GetMacro(selectedMacroIdx)
+    binding = selectedMacro.GetBinding(bindingIdx);
+
+    // Update AssignedInput combobox to correct Input type options
+    var comboAssignedInput = comboBox.parentElement.parentElement.querySelector("#comboMacroAssignment");
+    ClearOptions(comboAssignedInput);
+    options = GetAssignmentList(comboBox.value);
+    for (var o = 0; o < options.length; o++) {
+        AddNewOption(comboAssignedInput, options[o], o);
+    }
+    comboAssignedInput.value = 0; //bindings[i].GetAssignedInput();
+
+    binding.SetBindingType(newInputTypeIdx);
+    SendMacroBindingUpdate(selectedMacroIdx, bindingIdx);
+}
+
+function onComboMacroAssignmentChange(comboBox) {
+    // index.value == new assignment
+    newAssignmentIdx = comboBox.value
+    bindingIdx = comboBox.parentElement.parentElement.getAttribute("idx");
+    selectedMacroIdx = document.getElementById("comboAllMacros").value;
+    selectedMacro = device.GetMacro(selectedMacroIdx)
+    binding = selectedMacro.GetBinding(bindingIdx);
+
+    binding.SetAssignedInput(parseInt(newAssignmentIdx));
+    SendMacroBindingUpdate(selectedMacroIdx, bindingIdx);
+}
+
+function onInputMacroValueChange(comboBox) {
+    // index.value == new assignment
+    try {
+        newValue = parseInt(comboBox.value);
+    } catch {
+        newValue = 0
+    }
+    bindingIdx = comboBox.parentElement.parentElement.getAttribute("idx");
+    selectedMacroIdx = document.getElementById("comboAllMacros").value;
+    selectedMacro = device.GetMacro(selectedMacroIdx)
+    binding = selectedMacro.GetBinding(bindingIdx);
+
+    if (isNaN(newValue)) {
+        newValue = 0;
+    } else if (newValue < 0) {
+        console.log(newValue + " is less than zero :-(");
+        newValue = 0;
+        comboBox.value = newValue;
+    } else if (newValue > 4095) {
+        console.log(newValue + " is more than 4095 :-(");
+        newValue = 4095;
+        comboBox.value = newValue;
+    }
+    console.log(newValue);
+    comboBox.value = newValue;
+
+    binding.SetValue(newValue);
+    SendMacroBindingUpdate(selectedMacroIdx, bindingIdx);
+}
+
 
 function SetComboBoxValue(comboBox, value) {
     box = document.getElementById(comboBox);
@@ -426,6 +526,10 @@ function PopulateBindingTypeList() {
 
 function PopulateBindingAssignmentList() {
     var comboBindingType = document.getElementById("comboBindingType")
+    console.log(comboBindingType.selectedIndex);
+    if (comboBindingType.selectedIndex == -1) {
+        return;
+    }
     var bindingType = comboBindingType.options[comboBindingType.selectedIndex].value
 
 
@@ -446,6 +550,7 @@ function onPinChange() {
         selectedInputIndex + " pin to " +
         comboPin.value);
     device.GetInput(selectedInputIndex).SetPin(comboPin.value);
+    PopulateDeviceInputSelector();
 
     SendDeviceInputUpdate(selectedInputIndex);
 }
@@ -456,7 +561,6 @@ function onPinModeChange() {
         selectedInputIndex + " PinMode to " +
         comboPin.value);
     device.GetInput(selectedInputIndex).SetPinMode(comboPin.value);
-
     SendDeviceInputUpdate(selectedInputIndex);
 }
 
@@ -581,13 +685,30 @@ function onAddInput() {
     PopulateDeviceInputSelector();
     document.getElementById("comboAllInputs").value =
         device.inputs.length - 1;
+    document.getElementById("currentInputControl").hidden = false;
     onSelectedInputChange();
     SendDeviceInputUpdate(selectedInputIndex);
+}
+
+function onAddMacro() {
+
+    LockControls(true);
+    device.AddNewMacro();
+    PopulateDeviceMacroSelector();
+    document.getElementById("comboAllMacros").value =
+        device.macros.length - 1;
+    onSelectedMacroChange();
+    SendDeviceMacroConfig(selectedInputIndex)
 }
 
 function onOpenMacroPage() {
     document.getElementById("pageInput").hidden = true;
     document.getElementById("pageMacros").hidden = false;
+}
+
+function onOpenInputPage() {
+    document.getElementById("pageInput").hidden = false;
+    document.getElementById("pageMacros").hidden = true;
 }
 
 function onDeleteInput() {
@@ -599,6 +720,7 @@ function onDeleteInput() {
         document.getElementById("comboAllInputs").value = 0
         onSelectedInputChange();
     } else {
+        document.getElementById("currentInputControl").hidden = true;
 
     }
 }
@@ -758,6 +880,22 @@ function SendInputConfigRequest(idx) {
     SendRequest(request, INCOMING_INPUT_CONFIG_RESPONSE);
 }
 
+function SendDeviceMacroConfig(index) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_MACRO_CONFIG_UPDATE);
+    request.push(index);
+    macroName = device.GetMacro(index).GetMacroName();
+    for (var i = 0; i < 16; i++) {
+        request.push(macroName.codePointAt(i));
+    }
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    SendRequest(request, INCOMING_RESPONSE_MACRO_CONFIG_UPDATE);
+    LockControls(true);
+}
+
 function SendMacroConfigRequest(idx) {
     console.log("Sending macro config request " + idx);
     request = new Uint8Array([OUTGOING_REQUEST_HEADER, OUTGOING_REQUEST_MACRO_CONFIG, idx, 13, 10]);
@@ -783,7 +921,6 @@ function SendDeviceInputUpdate(index, sendAll = false) {
     request.push(OUTGOING_REQUEST_HEADER);
     request.push(OUTGOING_INPUT_CONFIG_UPDATE);
     request.push(index);
-    console.log(request);
     inputData = device.GetInput(index).ToIntArray()
     for (var i = 0; i < inputData.length; i++) {
         request.push(inputData[i]);
@@ -793,6 +930,42 @@ function SendDeviceInputUpdate(index, sendAll = false) {
     request = new Uint8Array(request);
     console.log("SENDING:" + request);
     serial.write(request);
+}
+
+function SendMacroNameUpdate(macroIdx) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_MACRO_NAME_UPDATE);
+    request.push(parseInt(macroIdx));
+
+    macroName = device.GetMacro(macroIdx).GetMacroName();
+    for (var i = 0; i < 16; i++) {
+        request.push(macroName.codePointAt(i));
+    }
+
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    console.log("SENDING:" + request);
+    SendRequest(request, INCOMING_RESPONSE_MACRO_NAME_UPDATE);
+}
+
+function SendMacroBindingUpdate(macroIdx, bindingIdx) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_MACRO_BINDING_UPDATE);
+    request.push(macroIdx);
+    request.push(bindingIdx);
+    bindingData = device.GetMacro(macroIdx).GetBinding(bindingIdx).ToIntArray();
+    for (var i = 0; i < bindingData.length; i++) {
+        request.push(bindingData[i]);
+    }
+
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    console.log("SENDING:" + request);
+    SendRequest(request, INCOMING_RESPONSE_MACRO_BINDING_UPDATE);
 }
 
 function SendRequestSaveToFlash() {
@@ -984,8 +1157,25 @@ function ParseResponse(response) {
             //SendRequestSaveToFlash();
         }
         LockControls(false);
+
+    } else if (response[0] == INCOMING_RESPONSE_MACRO_BINDING_UPDATE) {
+        console.log("Macro binding update confirmed");
+        serialWaitingOn = 0;
+        LockControls(false);
+
+    } else if (response[0] == INCOMING_RESPONSE_MACRO_CONFIG_UPDATE) {
+        console.log("Add Macro update confirmed");
+        serialWaitingOn = 0;
+        LockControls(false);
+
+    } else if (response[0] == INCOMING_RESPONSE_MACRO_NAME_UPDATE) {
+        console.log("Add Macro name confirmed");
+        serialWaitingOn = 0;
+        LockControls(false);
+
     } else if (response[0] == INCOMING_RESPONSE_SAVE_TO_FLASH) {
         console.log("Saved to flash confirmed");
+        console.log(response);
         serialWaitingOn = 0;
         LockControls(false);
     }
