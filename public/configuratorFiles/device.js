@@ -81,8 +81,22 @@ class Device {
         newMacro.AddBindingDefault();
     }
 
+    DeleteMacro(macroIdx) {
+        this.macros.splice(macroIdx, 1);
+        console.log("deleted macro");
+        console.log(this.macros);
+    }
+
     GetMacro(idx) {
         return this.macros[idx];
+    }
+
+    GetMacroNames() {
+        var list = [];
+        for (var i = 0; i < this.macros.length; i++) {
+            list.push(this.GetMacro(i).GetMacroName());
+        }
+        return list;
     }
 
     AddInputDefault() {
@@ -330,7 +344,7 @@ class DeviceInput {
 
 class Macro {
     constructor() {
-        this.macroName = "New Macrow";
+        this.macroName = "New Macro";
         this.bindings = []
 
         //this.AddBinding();
@@ -370,6 +384,12 @@ class Macro {
     GetBindings() {
         return this.bindings;
     }
+
+    DeleteBinding(bindingIdx) {
+        this.bindings.splice(bindingIdx, 1);
+        console.log("deleted binding from macro");
+        console.log(this.bindings);
+    }
 }
 
 
@@ -396,7 +416,13 @@ class Binding {
     }
 
     SetBindingType(val) {
-        this.inputType = val;
+        if (val == 4) { // If is macro
+            this.trigger = 3; //ON_BUTTON_UP
+            this.inputType = val;
+        } else {
+            this.trigger = 4; //constant
+            this.inputType = val;
+        }
     }
 
     GetAssignedInput() {
@@ -421,17 +447,9 @@ class Binding {
         this.inputType = data[1]
         this.assignedInput = data[2];
         this.value = data[3] << 8
-        this.value = data[4];
+        this.value += data[4];
         this.state = data[5];
         this.trigger = data[6];
-    }
-
-    SetValue(value) {
-        this.value = value;
-    }
-
-    GetValue() {
-        return this.value;
     }
 
     SetState(state) {
@@ -451,7 +469,6 @@ class Binding {
         bytes.push(this.value & 0xff);
         bytes.push(this.state);
         bytes.push(this.trigger);
-        console.log(bytes);
         return bytes
     }
 }

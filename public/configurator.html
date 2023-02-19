@@ -140,81 +140,89 @@
                         <h3>Macro Management</h3>
 
                     </div>
-                    <hr class="bg-primary border-2 border-top border-primary">
                     <div class="row">
-                        <div class="dropdown col-sm-3">
+                        <div class="dropdown col-sm-4">
                             <select id="comboAllMacros" onchange="onSelectedMacroChange()" class="form-select" aria-label="Default select example">
-                                <option value="1">2&emsp;&ensp;XAXIS</option>
-                                <option value="2">3&emsp;&ensp;BUTTON 3</option>
-                                <option value="3">4&emsp;&ensp;NONE</option>
-                                <option value="4">39&ensp;&ensp;HAT 1 NE</option>
+                                
                             </select>
                         </div>
-                        <div class="dropdown col-sm-3">
+                        <div class="col-sm-3">
                             <button id="buttonAddInput" onclick="onAddMacro()" class="btn btn-primary" type="button">
                                 Add Macro
                             </button>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-sm-3">
-                            <h4>Macro Name</h4>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="dropdown col-sm-3">
-                            <input id="inputMacroName" onchange="onMacroNameChange(this)" class="form-control" type="text" placeholder="New Macro" maxlength="16" onkeydown="return /[a-zA-Z0-9\s]+/i.test(event.key)">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-3">
-                            <h4>Bindings</h4>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-3">
-                            <h4>Device Type</h4>
-                        </div>
-                        <div class="col-sm-3">
-                            <h4>Input Type</h4>
-                        </div>
-                        <div class="col-sm-3">
-                            <h4>Input</h4>
-                        </div>
-                        <div class="col-sm-2">
-                            <h4>Value</h4>
-                        </div>
-                        <div class="col-sm-1">
-                        </div>
-                    </div>
-                    <div id="macroBindingRows">
-                        <div class="row bindingRow">
-                            <div class="col-sm-3">
-                                <select id="comboMacroDeviceType" onchange="onComboMacroDeviceChange(this)" class="form-select" aria-label="Default select example">
-                                    <option value="1">GAMEPAD</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-3">
-                                <select id="comboMacroInputType" onchange="onComboMacroInputChange(this)" class="form-select" aria-label="Default select example">
-                                    <option value="1">BUTTON</option>
-                                    <option value="2">AXIS</option>
-                                    <option value="3">HAT</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-3">
-                                <select id="comboMacroAssignment" onchange="onComboMacroAssignmentChange(this)" class="form-select" aria-label="Default select example">
 
-                                </select>
+                    <hr class="bg-primary border-2 border-top border-primary">
+                    </br>
+                    <div id="macroDetailPage" hidden>
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <h4>Macro Name</h4>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="dropdown col-sm-3">
+                                <input id="inputMacroName" onchange="onMacroNameChange(this)" class="form-control" type="text" placeholder="New Macro" maxlength="16" onkeydown="return /[a-zA-Z0-9\s]+/i.test(event.key)">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <h4>Bindings</h4>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <h4>Device Type</h4>
+                            </div>
+                            <div class="col-sm-3">
+                                <h4>Input Type</h4>
+                            </div>
+                            <div class="col-sm-3">
+                                <h4>Input</h4>
                             </div>
                             <div class="col-sm-2">
-                                <input id="comboMacroValue" onchange="onInputMacroValueChange(this)" min="0" max="4095" class="form-control" type="number">
+                                <h4>Value</h4>
                             </div>
                             <div class="col-sm-1">
-                                <div class="float-end ">
-                                    <button class="btn btn-sm btn-danger float-end " type="button ">
-                                        X
-                                    </button>
+                            </div>
+                        </div>
+                        <div id="macroBindingRows">
+                            <div class="row bindingRow">
+                                <div class="col-sm-3">
+                                    <select id="comboMacroDeviceType" onchange="onComboMacroDeviceChange(this)" class="form-select" aria-label="Default select example">
+                                        <option value="1">GAMEPAD</option>
+                                    </select>
                                 </div>
+                                <div class="col-sm-3">
+                                    <select id="comboMacroInputType" onchange="onComboMacroInputChange(this)" class="form-select" aria-label="Default select example">
+                                        <option value="1">BUTTON</option>
+                                        <option value="2">AXIS</option>
+                                        <option value="3">HAT</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-3">
+                                    <select id="comboMacroAssignment" onchange="onComboMacroAssignmentChange(this)" class="form-select" aria-label="Default select example">
+
+                                    </select>
+                                </div>
+                                <div class="col-sm-2">
+                                    <input id="comboMacroValue" onchange="onInputMacroValueChange(this)" min="0" max="32767" class="form-control" type="number">
+                                </div>
+                                <div class="col-sm-1">
+                                    <div class="float-end ">
+                                        <button class="btn btn-sm btn-danger float-end" onclick="onMacroBindingDelete(this)" type="button ">
+                                            X
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="dropdown col-sm-3">
+                                <button id="buttonAddMacroBinding" onclick="onAddMacroBinding()" class="btn btn-primary" type="button">
+                                    Add Binding
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -225,12 +233,7 @@
                     <div class="row text-center ">
                         <h3>Input Configuration</h3>
 
-                        <div class="row">
-                            <div class="col-sm-5">
-                                <h5>Inputs (Pin/Assignment)</h5>
-                            </div>
-                            <div class="col-sm-7"></div>
-                        </div>
+
                         <div class="row">
                             <div class="dropdown col-sm-4">
                                 <select id="comboAllInputs" onchange="onSelectedInputChange()" class="form-select" aria-label="Default select example">
@@ -240,14 +243,15 @@
                                     <option value="4">39&ensp;&ensp;HAT 1 NE</option>
                                 </select>
                             </div>
-                            <div class="dropdown col-sm-3">
+                            <div class="col-sm-3">
                                 <button id="buttonAddInput" onclick="onAddInput()" class="btn btn-primary" type="button">
-                                Add Input
-                            </button>
+                                    Add Input
+                                </button>
                             </div>
                         </div>
                     </div>
                     <hr class="bg-primary border-2 border-top border-primary">
+                    </br>
                     <div id="currentInputControl">
                         <div class="row">
                             <div class="col-sm-3">
@@ -266,21 +270,21 @@
                         <div class="row ">
                             <div class="dropdown col-sm-3">
                                 <select id="inputPin" onchange="onPinChange()" class="form-select" aria-label="Default select example">
-                                <option value="1">1</option>
-                                <option value="2">One</option>
-                                <option value="3">Two</option>
-                                <option value="4">Three</option>
-                            </select>
+                                    <option value="1">1</option>
+                                    <option value="2">One</option>
+                                    <option value="3">Two</option>
+                                    <option value="4">Three</option>
+                                </select>
                             </div>
                             <div class="dropdown col-sm-4">
                                 <select id="inputPinMode" onchange="onPinModeChange()" class="form-select" aria-label="Default select example">
 
-                            </select>
+                                </select>
                             </div>
                             <div class="dropdown col-sm-3">
                                 <select id="comboAnalogMode" onchange="onAnalogModeChange()" class="form-select" aria-label="Default select example">
 
-                            </select>
+                                </select>
                             </div>
                             <div class="checkbox col-sm-2 ">
                                 <input id="checkInverted" onclick="onIsInvertedChange()" type="checkbox" class="form-check-input" id="dropdownCheck">
@@ -350,12 +354,12 @@
                             <div class="dropdown col-sm-3 ">
                                 <select id="comboBindingType" onchange="onBindingTypeChange()" class=" form-select " aria-label="Default select example ">
 
-                            </select>
+                                </select>
                             </div>
                             <div class="dropdown col-sm-3 ">
                                 <select id="comboBindingAssignment" onChange="onBindingAssignmentChange()" class="form-select " aria-label="Default select example ">
 
-                            </select>
+                                </select>
                             </div>
                             <div class="col-sm-3 ">
                                 <p id="labelRawValue">2048</p>
@@ -373,8 +377,8 @@
                         <div class="row ">
                             <div class="float-end ">
                                 <button onClick="onDeleteInput()" class="btn btn-danger float-end " type="button ">
-                                Delete Input
-                            </button>
+                                    Delete Input
+                                </button>
                             </div>
                         </div>
 
@@ -443,7 +447,7 @@
         <!-- Copyright -->
         <div class="text-center p-3" style="color:white;">
             <p>Please support me on <a style="color:white;" href=" https://www.patreon.com/realrobots ">patreon.com/realrobots</a> to help fund development and server costs.</p>
-            <p>ESP32 firmware uploader powered by <a style="color:white;" href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>.</p>
+
         </div>
         <!-- Copyright -->
     </footer>

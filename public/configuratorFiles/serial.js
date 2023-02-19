@@ -58,7 +58,18 @@ class Serial {
     }
 
     async open(serialOptions) {
-        this.serialPort = await navigator.serial.requestPort();
+        let good = true;
+        this.serialPort = await navigator.serial.requestPort().catch((e) => {
+            // The user didn't select a port.
+            good = false;
+        });
+
+        if (!good) {
+            return false;
+        }
+        // navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
+        //     // Connect to `port` or add it to the list of available ports.
+        //   })
         // - Wait for the port to open.
         await this.serialPort.open(serialOptions);
 
@@ -78,6 +89,7 @@ class Serial {
             // value is a Uint8Array.
             this.fireEvent(SerialEvents.DATA_RECEIVED, value);
         }
+        //return true;
     }
 
     async close() {

@@ -1,4 +1,4 @@
-const GUI_VERSION = "V1.0.1"
+const GUI_VERSION = "V1.0.2"
 console.log("VERSION: " + GUI_VERSION);
 let serialOptions = { baudRate: 115200 };
 let serial;
@@ -52,6 +52,12 @@ const INCOMING_RESPONSE_MACRO_NAME_UPDATE = 119;
 const OUTGOING_REQUEST_MACRO_CONFIG_UPDATE = 120;
 const INCOMING_RESPONSE_MACRO_CONFIG_UPDATE = 121;
 
+const OUTGOING_REQUEST_DELETE_MACRO_UPDATE = 122;
+const INCOMING_RESPONSE_DELETE_MACRO_UPDATE = 123;
+
+const OUTGOING_REQUEST_DELETE_MACRO_BINDING_UPDATE = 124;
+const INCOMING_RESPONSE_DELETE_MACRO_BINDING_UPDATE = 125;
+
 let macroBindingRowsHolder;
 let macroBindingRowPrototype;
 
@@ -87,6 +93,10 @@ function CodeToString(code) {
             return "INCOMING_RESPONSE_MACRO_CONFIG_UPDATE";
         case INCOMING_RESPONSE_MACRO_NAME_UPDATE:
             return "INCOMING_RESPONSE_MACRO_NAME_UPDATE";
+        case INCOMING_RESPONSE_DELETE_MACRO_UPDATE:
+            return "INCOMING_RESPONSE_DELETE_MACRO_UPDATE";
+        case INCOMING_RESPONSE_DELETE_MACRO_BINDING_UPDATE:
+            return "INCOMING_RESPONSE_DELETE_MACRO_BINDING_UPDATE";
 
 
 
@@ -109,7 +119,7 @@ var sendAttempts = 0;
 var isConnected = false;
 
 
-function setup() {
+async function setup() {
     SetErrorText("");
     //createCanvas(640, 480);
     receivedData = new Uint8Array(256);
@@ -123,15 +133,20 @@ function setup() {
     serial.on(SerialEvents.ERROR_OCCURRED, onSerialErrorOccurred);
 
     // If we have previously approved ports, attempt to connect with them
-    serial.open(serialOptions);
-
-    // Add in a lil <p> element to provide messages. This is optional
-    //pHtmlMsg = createP("Click anywhere on this page to open the serial connection dialog");
-
     device = new Device();
-
-    setInterval(Update, 50);
     LockControls(true);
+    setInterval(Update, 50);
+    var res = await serial.open(serialOptions);
+    if (!res) {
+        console.log("Connect Failed: No port selected");
+        LockControls(false);
+    } else {
+
+
+    }
+
+
+
 }
 
 async function disconnect() {
@@ -143,6 +158,7 @@ async function disconnect() {
     document.getElementById("pageDeviceDetails").hidden = true;
     document.getElementById("pageInput").hidden = true;
     document.getElementById("pageMacros").hidden = true;
+    HighlightCurrentTab('none');
     isConnected = false;
     serialWaitingOn = 0;
     queuedMessages = [];
@@ -166,7 +182,13 @@ function Update() {
                 var timeDiff = new Date() - waitStart;
                 if (timeDiff > HANDSHAKE_TIMEOUT) {
                     console.log("Timed out waiting on " + CodeToString(serialWaitingOn));
+                    // if (serialWaitingOn == INCOMING_RESPONSE_MACRO_CONFIG) {
+                    //     serialWaitingOn = 0;
+                    //     queuedMessages = [];
+                    //     InitializeInputControls();
+                    // } else {
                     SendRequest(lastSent, serialWaitingOn); // ReSend
+                    //}
                 }
             } else {
                 if (queuedMessages.length > 0) {
@@ -238,6 +260,7 @@ function UpdateInputValues(inputIdx, raw, calibrated) {
 }
 
 function InitializeInputControls() {
+    console.log("InitializeInputControls")
     PopulateDeviceInputSelector();
     PopulateDeviceMacroSelector();
 
@@ -410,6 +433,7 @@ function onMacroNameChange(textBox) {
     device.GetMacro(selectedMacroIdx).SetMacroName(newMacroName);
 
     SendMacroNameUpdate(selectedMacroIdx);
+    PopulateDeviceMacroSelector();
 }
 
 // TODO: Alternate device types not implement yet (keyboard/mouse etc)
@@ -465,9 +489,9 @@ function onInputMacroValueChange(comboBox) {
         console.log(newValue + " is less than zero :-(");
         newValue = 0;
         comboBox.value = newValue;
-    } else if (newValue > 4095) {
-        console.log(newValue + " is more than 4095 :-(");
-        newValue = 4095;
+    } else if (newValue > 32767) {
+        console.log(newValue + " is more than 32767 :-(");
+        newValue = 32767;
         comboBox.value = newValue;
     }
     console.log(newValue);
@@ -532,8 +556,11 @@ function PopulateBindingAssignmentList() {
     }
     var bindingType = comboBindingType.options[comboBindingType.selectedIndex].value
 
-
-    options = GetAssignmentList(bindingType);
+    if (bindingType != MACRO) {
+        options = GetAssignmentList(bindingType);
+    } else {
+        options = device.GetMacroNames();
+    }
     comboBindingAssignment = document.getElementById("comboBindingAssignment");
     // console.log(comboBindingAssignment);
     ClearOptions(comboBindingAssignment);
@@ -673,8 +700,12 @@ function onSelectedInputChange() {
 }
 
 function onSelectedMacroChange() {
-    selectedInputIndex = document.getElementById("comboAllMacros").value;
-    SetMacroControlsFromDevice(selectedInputIndex);
+    if (device.macros.length > 0) {
+        selectedInputIndex = document.getElementById("comboAllMacros").value;
+        SetMacroControlsFromDevice(selectedInputIndex);
+    } else {
+
+    }
     // document.getElementById("pageInput").hidden = false;
     // document.getElementById("pageMacros").hidden = true;
 }
@@ -698,17 +729,86 @@ function onAddMacro() {
     document.getElementById("comboAllMacros").value =
         device.macros.length - 1;
     onSelectedMacroChange();
+    document.getElementById("macroDetailPage").hidden = false;
     SendDeviceMacroConfig(selectedInputIndex)
+}
+
+function onAddMacroBinding() {
+    LockControls(true);
+    currentMacro = document.getElementById("comboAllMacros").value;
+    device.GetMacro(currentMacro).AddBindingDefault();
+    onSelectedMacroChange();
+    //SendDeviceMacroConfig(selectedInputIndex)
+    SendMacroBindingUpdate(currentMacro, device.GetMacro(currentMacro).GetBindings().length - 1);
+}
+
+function onMacroBindingDelete(element) {
+    console.log(element);
+    bindingIdx = element.parentElement.parentElement.parentElement.getAttribute("idx");
+    currentMacro = document.getElementById("comboAllMacros").value;
+    if (device.GetMacro(currentMacro).GetBindings().length > 1) {
+        device.GetMacro(currentMacro).DeleteBinding(bindingIdx);
+        onSelectedMacroChange();
+        SendDeleteMacroBindingRequest(currentMacro, bindingIdx);
+    } else {
+        device.DeleteMacro(currentMacro);
+        SendDeleteMacroRequest(currentMacro);
+        if (device.macros.length > 0) {
+            document.getElementById("comboAllMacros").value = currentMacro - 1;
+            onSelectedMacroChange();
+        } else {
+            document.getElementById("macroDetailPage").hidden = true;
+        }
+    }
+
+    PopulateDeviceMacroSelector();
 }
 
 function onOpenMacroPage() {
     document.getElementById("pageInput").hidden = true;
     document.getElementById("pageMacros").hidden = false;
+    HighlightCurrentTab('macro');
+
+
+
+    if (device.macros.length > 0) {
+        document.getElementById("comboAllMacros").value = 0;
+        onSelectedMacroChange();
+
+        document.getElementById("macroDetailPage").hidden = false;
+    } else {
+        document.getElementById("macroDetailPage").hidden = true;
+    }
 }
 
 function onOpenInputPage() {
     document.getElementById("pageInput").hidden = false;
     document.getElementById("pageMacros").hidden = true;
+    HighlightCurrentTab('input');
+    selectedInputIndex = 0;
+
+}
+
+function HighlightCurrentTab(tab) {
+    if (tab == 'input') {
+        document.getElementById("buttonOpenInputPage").classList.remove("btn-primary");
+        document.getElementById("buttonOpenInputPage").classList.add("btn-secondary");
+
+        document.getElementById("buttonMacros").classList.add("btn-primary");
+        document.getElementById("buttonMacros").classList.remove("btn-secondary");
+    } else if (tab == 'macro') {
+        document.getElementById("buttonOpenInputPage").classList.add("btn-primary");
+        document.getElementById("buttonOpenInputPage").classList.remove("btn-secondary");
+
+        document.getElementById("buttonMacros").classList.remove("btn-primary");
+        document.getElementById("buttonMacros").classList.add("btn-secondary");
+    } else {
+        document.getElementById("buttonOpenInputPage").classList.add("btn-primary");
+        document.getElementById("buttonOpenInputPage").classList.remove("btn-secondary");
+
+        document.getElementById("buttonMacros").classList.add("btn-primary");
+        document.getElementById("buttonMacros").classList.remove("btn-secondary");
+    }
 }
 
 function onDeleteInput() {
@@ -827,6 +927,14 @@ function SendRequest(request, returnCode) {
 
         if (returnCode != INCOMING_RESPONSE_INPUT_VALUES) {
             if (serialWaitingOn == returnCode) {
+                // if (sendAttempts > 20) {
+                //     serialWaitingOn = 0;
+                //     console.log("TIMED OUT");
+                //     queuedMessages = [];
+                //     return;
+                // }
+
+
                 sendAttempts += 1;
                 console.log("ATTEMPTS: " + sendAttempts);
                 // Send again if same
@@ -916,6 +1024,31 @@ function SendDeleteInputRequest(index) {
     //serial.write(request);
 }
 
+function SendDeleteMacroRequest(macroIdx) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_DELETE_MACRO_UPDATE);
+    request.push(macroIdx);
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    SendRequest(request, INCOMING_RESPONSE_DELETE_MACRO_UPDATE);
+    LockControls(true);
+}
+
+function SendDeleteMacroBindingRequest(macroIdx, bindingIdx) {
+    request = []
+    request.push(OUTGOING_REQUEST_HEADER);
+    request.push(OUTGOING_REQUEST_DELETE_MACRO_BINDING_UPDATE);
+    request.push(macroIdx);
+    request.push(bindingIdx);
+    request.push(13);
+    request.push(10);
+    request = new Uint8Array(request);
+    SendRequest(request, INCOMING_RESPONSE_DELETE_MACRO_BINDING_UPDATE);
+    LockControls(true);
+}
+
 function SendDeviceInputUpdate(index, sendAll = false) {
     request = []
     request.push(OUTGOING_REQUEST_HEADER);
@@ -929,6 +1062,7 @@ function SendDeviceInputUpdate(index, sendAll = false) {
     request.push(10);
     request = new Uint8Array(request);
     console.log("SENDING:" + request);
+    console.log(request);
     serial.write(request);
 }
 
@@ -1092,6 +1226,11 @@ function ParseResponse(response) {
         console.log("Device Config Received");
         serialWaitingOn = 0;
         device.SetFromConfigPacket(response);
+        if (device.GetFirmwareVersion() < 2) {
+            disconnect()
+            SetErrorText("Incompatible firmware version detected, please upload latest.")
+        }
+
         device.SetDeviceBlueprint(GetDeviceTarget(device.microcontroller));
         InitializeInputControls();
         SetDeviceDescriptionFromDevice();
@@ -1156,6 +1295,18 @@ function ParseResponse(response) {
             console.log("OK");
             //SendRequestSaveToFlash();
         }
+        LockControls(false);
+    } else if (response[0] == INCOMING_RESPONSE_DELETE_MACRO_UPDATE) {
+        serialWaitingOn = 0;
+        console.log("Device Macro Delete Confirmation Received");
+
+        LockControls(false);
+
+
+    } else if (response[0] == INCOMING_RESPONSE_DELETE_MACRO_BINDING_UPDATE) {
+        serialWaitingOn = 0;
+        console.log("Device Macro Binding Delete Confirmation Received");
+
         LockControls(false);
 
     } else if (response[0] == INCOMING_RESPONSE_MACRO_BINDING_UPDATE) {

@@ -115,13 +115,22 @@ const pinModes = ["INPUT", "INPUT_PULLUP", "INPUT_PULLDOWN", "OUTPUT"];
 const pinModeInt = [INPUT, INPUT_PULLUP, INPUT_PULLDOWN, OUTPUT];
 
 
+// TriggerType
+const BUTTON_UP = 0
+const BUTTON_DOWN = 1;
+const BUTTON_ON_UP = 2;
+const BUTTON_ON_DOWN = 3;
+const CONSTANT = 4;
+
+
 // HID Input Types
 GAMEPAD_BUTTON = 1 // 1-128
 GAMEPAD_AXIS = 2 // 0-7  x, y, z, rZ, rX, rY, slider1, slider2
 GAMEPAD_HAT = 3 // 3 hats, 8 directions each, assignedInput = dir + hatIdx*9
-GAMEPAD_SPECIAL = 4
+MACRO = 4
+    //GAMEPAD_SPECIAL = 4
 
-inputTypes = ["NONE", "BUTTON", "AXIS", "HAT"]
+inputTypes = ["NONE", "BUTTON", "AXIS", "HAT", "MACRO"]
 
 inputsGamepadButtons = ["NONE"]
 for (var i = 1; i < 129; i++) {
@@ -148,12 +157,14 @@ function GetAssignmentList(inputType) {
     indexOf = inputType;
 
     if (indexOf == GAMEPAD_BUTTON) {
-        return inputsGamepadButtons
+        return inputsGamepadButtons;
     } else if (indexOf == GAMEPAD_AXIS) {
-        return inputsGamepadAxes
+        return inputsGamepadAxes;
     } else if (indexOf == GAMEPAD_HAT) {
-        return inputsGamepadHats
+        return inputsGamepadHats;
+    } else if (indexOf == MACRO) {
+        return ["MACROS"];
     } else {
-        return ["NONE"]
+        return ["NONE"];
     }
 }

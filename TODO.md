@@ -1,5 +1,6 @@
 BUGFIXES
-
+- Reset "CONNECT" button when choosing a port fails
+- Loads endless inputs on connect?
 
 FEATURES
 - Make uncompiled firmware more easily available for download
