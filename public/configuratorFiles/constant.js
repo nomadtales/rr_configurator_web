@@ -74,7 +74,7 @@ targetESP32.pins.push(new Pin(35, 1, 0, "Input only"))
 targetESP32.pins.push(new Pin(36, 1, 0, "Input only"))
 targetESP32.pins.push(new Pin(39, 1, 0, "Input only"))
 
-for (var i = 0; i < 22; i++) {
+for (var i = 0; i <= 22; i++) {
     targetRP2040.pins.push(new Pin(i, 1, 1))
 }
 targetRP2040.pins.push(new Pin(26, 1, 1))
